@@ -1,1 +1,9 @@
 Scrapy_env
+.DS_Store
+product_scraper/.DS_Store
+product_scraper/product_scraper/.DS_Store
+product_scraper/product_scraper/__pycache__/items.cpython-37.pyc
+product_scraper/product_scraper/spiders/__pycache__/ecom_spider.cpython-37.pyc
+product_scraper/product_scraper/spiders/demofile2.txt
+product_scraper/product_scraper/spiders/geckodriver.log
+product_scraper/product_scraper/spiders/product.json
