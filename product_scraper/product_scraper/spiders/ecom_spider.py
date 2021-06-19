@@ -1,3 +1,4 @@
+from datetime import timedelta
 import urllib
 from urllib import parse
 from selenium import webdriver
@@ -7,6 +8,9 @@ from reportlab.lib.units import mm
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase import pdfmetrics
+import sys
+from PyQt5 import QtWidgets
+import MainWindow 
 
 class Carrier():
     status = ''
@@ -24,35 +28,43 @@ class Carrier():
     DateOfCompete  = ''
     Region = ''
     OKPO = ''
+    name = ''
+    addres = ''
+    phoneNumber = ''
+    garajeNumber = ''
+    driverLicense = ''
+    category = ''
 
-class EcomSpider():
+def parse(gosReg):
+
     params = {
-            'number': 'у019ао797',
-            'name' : '',
-            'id' : '',
-            'region': 'ALL'
-        }
+        'number': gosReg,
+        'name' : '',
+        'id' : '',
+        'region': 'ALL'
+    }
 
-    mtdi_url = f'https://mtdi.mosreg.ru/deyatelnost/celevye-programmy/taksi1/proverka-razresheniya-na-rabotu-taksi?{urllib.parse.urlencode(params)}'
+    if params['number'] != '' :
+
+        mtdi_url = f'https://mtdi.mosreg.ru/deyatelnost/celevye-programmy/taksi1/proverka-razresheniya-na-rabotu-taksi?{urllib.parse.urlencode(params)}'
         
 
-    def parse(self):
-        self.driver = webdriver.Safari()
-        self.driver.get(self.mtdi_url)
+        driver = webdriver.Safari()
+        driver.get(mtdi_url)
         item = Carrier()
 
-        f = open("demofile2.txt", "a")
+        #f = open("demofile2.txt", "a")
 
         item.status = ''
         j = 0
 
         while item.status != 'Действующее' :
-            next = self.driver.find_elements_by_xpath("//a[@class='js-popup-open']")[j]
+            next = driver.find_elements_by_xpath("//a[@class='js-popup-open']")[j]
             next.click()
             
             arr = []
             for i in range(1, 15):
-                table = self.driver.find_element_by_xpath(f"//div[@id='taxi-info']/div[@class='typical']/div[@class='table-responsive']/table/tbody/tr[{i}]/td[2]").text
+                table = driver.find_element_by_xpath(f"//div[@id='taxi-info']/div[@class='typical']/div[@class='table-responsive']/table/tbody/tr[{i}]/td[2]").text
                 arr.append(table)
                 
             item.status = arr[0]
@@ -70,13 +82,13 @@ class EcomSpider():
             item.DateOfCompete = arr[12].replace(' ', '').replace('\n', ' ')
             item.Region = arr[13]
 
-            next = self.driver.find_element_by_xpath("//button[@class='mfp-close']")
+            next = driver.find_element_by_xpath("//button[@class='mfp-close']")
             next.click()
             
             time.sleep(1)
 
             j += 1
-
+        '''
         f.write(item.gosReg + ' : {\n')
 
         f.write('status : ' + item.status + '\n')
@@ -93,10 +105,11 @@ class EcomSpider():
         f.write('CompeteUL : ' + item.CompeteUL + '\n')
         f.write('DateOfCompete : ' + item.DateOfCompete + '\n')
         f.write('Region : ' + item.Region + '\n')
+        '''
 
         time.sleep(1)
 
-        next = self.driver.find_element_by_xpath("//img[@alt='QR']")
+        next = driver.find_element_by_xpath("//img[@alt='QR']")
         next.click()
 
         time.sleep(1)
@@ -106,27 +119,31 @@ class EcomSpider():
         }
         b_kontur_url = f'https://www.b-kontur.ru/profi/okpo-po-inn-ili-ogrn?{urllib.parse.urlencode(inn)}'
         
-        self.driver.get(b_kontur_url)
+        driver.get(b_kontur_url)
         time.sleep(2)
 
-        OKPO = self.driver.find_elements_by_xpath("//dd")[2].text
+        OKPO = driver.find_elements_by_xpath("//dd")[2].text
         item.OKPO = OKPO
-         
+
+        '''    
         f.write('OKPO : ' + item.OKPO + '\n')
         f.write('}\n')
 
         f.close()
+        '''
 
-        self.driver.close()
+        driver.close()
 
         return item
 
-    def makePDF(self, Carrier):
-        canvas = Canvas("font-colors.pdf", pagesize = landscape(A4))
+def makePDF(Carrier, dateFrom, dateTo):
+    date = dateFrom
+    canvas = Canvas("font-colors.pdf", pagesize = landscape(A4))
 
-        pdfmetrics.registerFont(TTFont('FreeSans', 'FreeSans.ttf'))
-        pdfmetrics.registerFont(TTFont('FreeSansBold', 'FreeSansBold.ttf'))
+    pdfmetrics.registerFont(TTFont('FreeSans', 'FreeSans.ttf'))
+    pdfmetrics.registerFont(TTFont('FreeSansBold', 'FreeSansBold.ttf'))
 
+    while date != dateTo + timedelta(days = 1):
         canvas.setFont('FreeSans', 8)
         canvas.setLineWidth(0.5)
 
@@ -179,19 +196,19 @@ class EcomSpider():
         canvas.line(46 * mm, 122.5 * mm, 74 * mm, 122.5 * mm)
 
         canvas.drawString(75 * mm, 138 * mm, 'Категория: ')
-        canvas.line(90 * mm, 137.5 * mm, 140 * mm, 137.5 * mm)
+        canvas.drawString(90 * mm, 138 * mm, Carrier.category)
 
         canvas.drawString(75 * mm, 142 * mm, 'Гаражный номер: ')
-        canvas.line(100 * mm, 141.5 * mm, 140 * mm, 141.5 * mm)
+        canvas.drawString(100 * mm, 142 * mm, Carrier.garajeNumber)
 
         canvas.drawString(75 * mm, 148 * mm, 'Регистрационный № ')
         canvas.drawString(106 * mm, 148 * mm, Carrier.regNum + ' ' + Carrier.NumberOfResolution)
 
         canvas.drawString(10 * mm, 138 * mm, 'Водительское удостоверение №')
-        canvas.line(54 * mm, 137.5 * mm, 74 * mm, 137.5 * mm)
+        canvas.drawString(54 * mm, 138 * mm, Carrier.driverLicense)
 
         canvas.drawString(10 * mm, 142 * mm, 'Водитель')
-        canvas.line(24 * mm, 141.5 * mm, 74 * mm, 141.5 * mm)
+        canvas.drawString(30 * mm, 142 * mm, Carrier.name)
 
         canvas.drawString(10 * mm, 148 * mm, 'Лицензионная карточка: ')
         canvas.line(44 * mm, 147.5 * mm, 74 * mm, 147.5 * mm)
@@ -206,8 +223,10 @@ class EcomSpider():
         canvas.drawString(30 * mm, 159 * mm, Carrier.CompeteUL )
 
         canvas.drawString(10 * mm, 192 * mm, 'Телефон: ')
+        canvas.drawString(30 * mm, 192 * mm, Carrier.phoneNumber)
 
         canvas.drawString(10 * mm, 196 * mm, 'Адрес: ')
+        canvas.drawString(30 * mm, 196 * mm, Carrier.addres)
 
         canvas.drawString(10 * mm, 200 * mm, 'Перевозчик: ')
         canvas.drawString(30 * mm, 200 * mm, Carrier.carrier)
@@ -220,6 +239,8 @@ class EcomSpider():
 
         canvas.drawString(113 * mm, 200 * mm, 'ОКПО: ')
         canvas.drawString(125 * mm, 200 * mm, Carrier.OKPO)
+
+        canvas.drawString(60 * mm, 175 * mm, date.strftime('«‎%d»‎ %B %Y'))
 
         canvas.setFont('FreeSans', 6)
 
@@ -270,13 +291,42 @@ class EcomSpider():
 
         canvas.setFont('FreeSansBold', 6)
         canvas.drawString(64 * mm, 182 * mm, 'серия:')
-  
-        #canvas.line(100 * mm, 12 * mm, 110 * mm, 12 * mm)
-        # Save the PDF file
-        canvas.save()
 
-CarrierForParse = Carrier()
+        canvas.showPage()
+        date += timedelta(days = 1)
 
-parser = EcomSpider()
-CarrierForParse = parser.parse()
-parser.makePDF(CarrierForParse)
+    canvas.save()
+
+'''
+if __name__ == "__main__":
+    args = sys.argv
+    # args[0] = current file
+    # args[1] = function name
+    # args[2:] = function args : (*unpacked)
+    globals()[args[1]](*args[2:])
+'''
+class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self) 
+        self.workbtn.clicked.connect(self.work)
+    
+    def work(self):
+        CarrierForParse = Carrier()
+        CarrierForParse = parse(self.gosNum.text())
+        CarrierForParse.name = self.name.text()
+        CarrierForParse.addres = self.addres.text()
+        CarrierForParse.phoneNumber = self.phoneNumber.text()
+        CarrierForParse.garajeNumber = self.garajeNumber.text()
+        CarrierForParse.driverLicense = self.driverLicense.text()
+        CarrierForParse.category = self.category.text()
+        makePDF(CarrierForParse,self.dateEditFrom.date().toPyDate(), self.dateEditTo.date().toPyDate())
+
+def main():
+    app = QtWidgets.QApplication(sys.argv) 
+    window = App()
+    window.show()
+    app.exec_() 
+
+if __name__ == '__main__':
+    main() 
