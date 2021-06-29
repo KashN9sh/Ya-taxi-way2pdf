@@ -405,6 +405,9 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
                     self.loadFromBD = True
                     self.carrierFromBDNum = i
 
+                else:
+                    self.loadFromBD = False
+
                 i += 1
     
     def checkGosnum(self):
@@ -412,15 +415,18 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
         flag = False
 
         for carrier in self.bd:
-            if self.gosNum.text().lower() == carrier.gosReg.lower() :
+            if self.gosNum.text().lower() == carrier.gosReg.lower() and self.name.text().lower() == carrier.name.lower():
                 self.carrierFromBDNum = i
+                flag = True
                 
             i += 1
 
         return flag
 
     def work(self):  
-        if not self.loadFromBD and not self.checkGosnum:
+        print(self.loadFromBD)
+        print(self.checkGosnum())
+        if not self.loadFromBD and not self.checkGosnum():
             CarrierForParse = Carrier()
             CarrierForParse = parse(self.gosNum.text())
             CarrierForParse.name = self.name.text()
@@ -438,7 +444,7 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
 
             makePDF(CarrierForParse,self.dateEditFrom.date().toPyDate(), self.dateEditTo.date().toPyDate())
 
-        if not self.loadFromBD and self.checkGosnum:
+        if not self.loadFromBD and self.checkGosnum():
             self.bd[self.carrierFromBDNum].name = self.name.text()
             self.bd[self.carrierFromBDNum].addres = self.addres.text()
             self.bd[self.carrierFromBDNum].phoneNumber = self.phoneNumber.text()
@@ -453,7 +459,7 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
             f.close()
 
             makePDF(self.bd[self.carrierFromBDNum],self.dateEditFrom.date().toPyDate(), self.dateEditTo.date().toPyDate())
-
+  
         else:
             self.bd[self.carrierFromBDNum].name = self.name.text()
             self.bd[self.carrierFromBDNum].addres = self.addres.text()
@@ -463,6 +469,8 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
             self.bd[self.carrierFromBDNum].category = self.category.text()
             makePDF(self.bd[self.carrierFromBDNum],self.dateEditFrom.date().toPyDate(), self.dateEditTo.date().toPyDate())
             self.loadFromBD = False
+        
+        self.autoFill()
 
 def main():
     app = QtWidgets.QApplication(sys.argv) 
