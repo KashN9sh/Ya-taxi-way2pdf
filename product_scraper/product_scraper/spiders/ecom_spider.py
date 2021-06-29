@@ -3,7 +3,7 @@ import urllib
 from urllib import parse
 from selenium import webdriver
 import time
-from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.pagesizes import A5, landscape
 from reportlab.lib.units import mm
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.pdfbase.ttfonts import TTFont
@@ -51,7 +51,7 @@ def parse(gosReg):
         mtdi_url = f'https://mtdi.mosreg.ru/deyatelnost/celevye-programmy/taksi1/proverka-razresheniya-na-rabotu-taksi?{urllib.parse.urlencode(params)}'
         
 
-        driver = webdriver.Safari()
+        driver = webdriver.Chrome('chromedriver.exe')
         driver.get(mtdi_url)
         item = Carrier()
 
@@ -68,6 +68,24 @@ def parse(gosReg):
             for i in range(1, 15):
                 table = driver.find_element_by_xpath(f"//div[@id='taxi-info']/div[@class='typical']/div[@class='table-responsive']/table/tbody/tr[{i}]/td[2]").text
                 arr.append(table)
+                
+            if arr[3][0] == 'О':
+                mystr = arr[3]
+                i=0
+                newstr = ''
+                flag = 0
+                for sym in mystr:
+                    if sym == '"' :
+                        i +=1
+                    if i == 2:
+                        flag = 1
+                    if flag :
+                        newstr += sym
+                        i += 1
+                newstr = newstr[:-1]
+                newstr = 'ООО' + newstr
+                arr[3] = newstr
+                arr[11] = newstr
                 
             item.status = arr[0]
             item.date = arr[1]
@@ -139,9 +157,16 @@ def parse(gosReg):
 
         return item
 
+def dateToStr(aDate):
+    months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
+
+    dateStr = '«‎' + str(aDate.day) + '»‎' + months[aDate.month - 1]  + ' ' + str(aDate.year)
+
+    return dateStr
+
 def makePDF(Carrier, dateFrom, dateTo):
     date = dateFrom
-    canvas = Canvas(Carrier.name.split()[0] + ".pdf", pagesize = landscape(A4))
+    canvas = Canvas(Carrier.name.split()[0] + ".pdf", pagesize = A5)
 
     pdfmetrics.registerFont(TTFont('FreeSans', 'FreeSans.ttf'))
     pdfmetrics.registerFont(TTFont('FreeSansBold', 'FreeSansBold.ttf'))
@@ -213,8 +238,12 @@ def makePDF(Carrier, dateFrom, dateTo):
         canvas.drawString(53 * mm, 138 * mm, Carrier.driverLicense)
 
         canvas.drawString(10 * mm, 142 * mm, 'Водитель:')
-        canvas.drawString(24 * mm, 142 * mm, Carrier.name.split()[0] + '.' + Carrier.name.split()[1][0] + '.' + Carrier.name.split()[2][0])
-
+        try :
+            canvas.drawString(24 * mm, 142 * mm, Carrier.name.split()[0] + '.' + Carrier.name.split()[1][0] + '.' + Carrier.name.split()[2][0])
+        except :
+            canvas.drawString(24 * mm, 142 * mm, Carrier.name.split()[0] + '.' + Carrier.name.split()[1][0])
+        
+            
         canvas.drawString(10 * mm, 148 * mm, 'Лицензионная карточка: стандартная')
 
         canvas.drawString(10 * mm, 152 * mm, 'Государственный номерной знак: ')
@@ -244,7 +273,7 @@ def makePDF(Carrier, dateFrom, dateTo):
         canvas.drawString(113 * mm, 200 * mm, 'ОКПО: ')
         canvas.drawString(124 * mm, 200 * mm, Carrier.OKPO)
 
-        canvas.drawString(63 * mm, 175 * mm, date.strftime('«‎%d»‎ %B %Y'))
+        canvas.drawString(63 * mm, 175 * mm, dateToStr(date))
 
         canvas.setFont('FreeSans', 6)
 
@@ -295,8 +324,12 @@ def makePDF(Carrier, dateFrom, dateTo):
 
         canvas.setFont('FreeSansBold', 6)
         canvas.drawString(64 * mm, 182 * mm, 'серия:')
-        canvas.drawString(72 * mm, 182 * mm, Carrier.CompeteUL.split()[2][0] + Carrier.CompeteUL.split()[3][0] + ' № ' + str(i))
-
+        try :
+            canvas.drawString(72 * mm, 182 * mm, Carrier.CompeteUL.split()[2][0] + Carrier.CompeteUL.split()[3][0] + ' № ' + str(i))
+        except :
+            canvas.drawString(72 * mm, 182 * mm, Carrier.CompeteUL[4] + Carrier.CompeteUL[5] + ' № ' + str(i))
+        
+            
         canvas.showPage()
         date += timedelta(days = 1)
         i += 1
@@ -369,8 +402,6 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
                 self.category.setText(carrier.category)
                 self.loadFromBD = True
                 self.carrierFromBDNum = i
-            else:
-                self.loadFromBD = False
 
             i += 1
 
@@ -387,6 +418,7 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
             jsonStr = json.dumps(CarrierForParse.__dict__,ensure_ascii=False)
 
             f = open("demofile2.txt", "a")
+            f.write('\n')
             f.write(jsonStr)
             f.close()
 
@@ -399,6 +431,7 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
             self.bd[self.carrierFromBDNum].driverLicense = self.driverLicense.text()
             self.bd[self.carrierFromBDNum].category = self.category.text()
             makePDF(self.bd[self.carrierFromBDNum],self.dateEditFrom.date().toPyDate(), self.dateEditTo.date().toPyDate())
+            self.loadFromBD = False
 
 def main():
     app = QtWidgets.QApplication(sys.argv) 
