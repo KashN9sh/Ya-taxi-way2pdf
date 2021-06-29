@@ -409,14 +409,15 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
     
     def checkGosnum(self):
         i = 0
+        flag = False
 
         for carrier in self.bd:
             if self.gosNum.text().lower() == carrier.gosReg.lower() :
                 self.carrierFromBDNum = i
-
-                return True
                 
             i += 1
+
+        return flag
 
     def work(self):  
         if not self.loadFromBD and not self.checkGosnum:
