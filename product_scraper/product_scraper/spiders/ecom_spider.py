@@ -71,17 +71,17 @@ def parse(gosReg):
                 
             if arr[3][0] == 'О':
                 mystr = arr[3]
-                i=0
+                i = 0
                 newstr = ''
                 flag = 0
                 for sym in mystr:
                     if sym == '"' :
-                        i +=1
+                        i += 1
                     if i == 2:
                         flag = 1
                     if flag :
                         newstr += sym
-                        i += 1
+
                 newstr = newstr[:-1]
                 newstr = 'ООО' + newstr
                 arr[3] = newstr
@@ -382,6 +382,7 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
         self.setupUi(self) 
         self.workbtn.clicked.connect(self.work)
         self.gosNum.textChanged.connect(self.autoFill)
+        self.name.textChanged.connect(self.autoFill)
         
         f = open("demofile2.txt", "r")
         for line in f:
@@ -392,21 +393,33 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
     def autoFill(self):
         i = 0
         for carrier in self.bd:
+            if self.name.text() != '':
+                if self.gosNum.text().lower() == carrier.gosReg.lower() and self.name.text().split()[0].lower() == carrier.name.split()[0].lower() :
+                    self.gosNum.setText(carrier.gosReg)
+                    self.name.setText(carrier.name)
+                    self.addres.setText(carrier.addres)
+                    self.phoneNumber.setText(carrier.phoneNumber)
+                    self.garajeNumber.setText(carrier.garajeNumber)
+                    self.driverLicense.setText(carrier.driverLicense)
+                    self.category.setText(carrier.category)
+                    self.loadFromBD = True
+                    self.carrierFromBDNum = i
+
+                i += 1
+    
+    def checkGosnum(self):
+        i = 0
+
+        for carrier in self.bd:
             if self.gosNum.text().lower() == carrier.gosReg.lower() :
-                self.gosNum.setText(carrier.gosReg)
-                self.name.setText(carrier.name)
-                self.addres.setText(carrier.addres)
-                self.phoneNumber.setText(carrier.phoneNumber)
-                self.garajeNumber.setText(carrier.garajeNumber)
-                self.driverLicense.setText(carrier.driverLicense)
-                self.category.setText(carrier.category)
-                self.loadFromBD = True
                 self.carrierFromBDNum = i
 
+                return True
+                
             i += 1
 
     def work(self):  
-        if not self.loadFromBD:
+        if not self.loadFromBD and not self.checkGosnum:
             CarrierForParse = Carrier()
             CarrierForParse = parse(self.gosNum.text())
             CarrierForParse.name = self.name.text()
@@ -423,6 +436,23 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
             f.close()
 
             makePDF(CarrierForParse,self.dateEditFrom.date().toPyDate(), self.dateEditTo.date().toPyDate())
+
+        if not self.loadFromBD and self.checkGosnum:
+            self.bd[self.carrierFromBDNum].name = self.name.text()
+            self.bd[self.carrierFromBDNum].addres = self.addres.text()
+            self.bd[self.carrierFromBDNum].phoneNumber = self.phoneNumber.text()
+            self.bd[self.carrierFromBDNum].garajeNumber = self.garajeNumber.text()
+            self.bd[self.carrierFromBDNum].driverLicense = self.driverLicense.text()
+            self.bd[self.carrierFromBDNum].category = self.category.text()
+
+            jsonStr = json.dumps(self.bd[self.carrierFromBDNum].__dict__,ensure_ascii=False)
+            f = open("demofile2.txt", "a")
+            f.write('\n')
+            f.write(jsonStr)
+            f.close()
+
+            makePDF(self.bd[self.carrierFromBDNum],self.dateEditFrom.date().toPyDate(), self.dateEditTo.date().toPyDate())
+
         else:
             self.bd[self.carrierFromBDNum].name = self.name.text()
             self.bd[self.carrierFromBDNum].addres = self.addres.text()
