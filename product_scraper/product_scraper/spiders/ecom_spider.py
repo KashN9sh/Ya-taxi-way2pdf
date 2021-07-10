@@ -15,7 +15,7 @@ import pandas as pd
 import MainWindow
 
 
-class Carrier():
+class Carrier:
     status = ''
     date = ''
     regNum = ''
@@ -39,9 +39,9 @@ class Carrier():
     category = ''
 
 
-def parse(gosReg, QR):
+def parse_info(gos_reg, qr):
     params = {
-        'number': gosReg,
+        'number': gos_reg,
         'name': '',
         'id': '',
         'region': 'ALL'
@@ -49,25 +49,25 @@ def parse(gosReg, QR):
 
     if params['number'] != '':
 
-        mtdi_url = f'https://mtdi.mosreg.ru/deyatelnost/celevye-programmy/taksi1/proverka-razresheniya-na-rabotu-taksi?{urllib.parse.urlencode(params)}'
+        mtdi_url = f'https://mtdi.mosreg.ru/deyatelnost/celevye-programmy/taksi1/' \
+                   f'proverka-razresheniya-na-rabotu-taksi?{urllib.parse.urlencode(params)} '
 
         driver = webdriver.Chrome('chromedriver.exe')
         driver.get(mtdi_url)
         item = Carrier()
 
-        # f = open("demofile2.txt", "a")
-
         item.status = ''
         j = 0
 
         while item.status != 'Действующее':
-            next = driver.find_elements_by_xpath("//a[@class='js-popup-open']")[j]
-            next.click()
+            button = driver.find_elements_by_xpath("//a[@class='js-popup-open']")[j]
+            button.click()
 
             arr = []
             for i in range(1, 15):
                 table = driver.find_element_by_xpath(
-                    f"//div[@id='taxi-info']/div[@class='typical']/div[@class='table-responsive']/table/tbody/tr[{i}]/td[2]").text
+                    f"//div[@id='taxi-info']/div[@class='typical']/"
+                    f"div[@class='table-responsive']/table/tbody/tr[{i}]/td[2]").text
                 arr.append(table)
 
             if arr[3][0] == 'О':
@@ -103,37 +103,18 @@ def parse(gosReg, QR):
             item.DateOfCompete = arr[12].replace(' ', '').replace('\n', ' ')
             item.Region = arr[13]
 
-            next = driver.find_element_by_xpath("//button[@class='mfp-close']")
-            next.click()
+            button = driver.find_element_by_xpath("//button[@class='mfp-close']")
+            button.click()
 
             time.sleep(1)
 
             j += 1
 
-        '''
-        f.write(item.gosReg + ' : {\n')
-
-        f.write('"status" : ' + '"' + item.status + '"' + ', \n')
-        f.write('"date" : ' + '"' + item.date + '"' + ', \n')
-        f.write('"regNum" : ' + '"' + item.regNum + '"' + ', \n')
-        f.write('"carrier" : ' + '"' + item.carrier + '"' + ', \n')
-        f.write('"ogrn" : ' + '"' + item.ogrn + '"' + ', \n') 
-        f.write('"inn" : ' + '"' + item.inn + '"' + ', \n')
-        f.write('"markAuto" : ' + '"' + item.markAuto + '"' + ', \n')
-        f.write('"modelAuto" : ' + '"' + item.modelAuto + '"' + ', \n')
-        f.write('"gosReg" : ' + '"' + item.gosReg + '"' + ', \n')
-        f.write('"yearOfCreate" : ' + '"' +  item.yearOfCreate + '"' + ', \n')
-        f.write('"NumberOfResolution" : '  + '"' + item.NumberOfResolution + '"' + ', \n')
-        f.write('"CompeteUL" : ' + '"' + item.CompeteUL + '"' + ', \n')
-        f.write('"DateOfCompete" : ' + '"' + item.DateOfCompete + '"' + ', \n')
-        f.write('"Region" : ' + '"' + item.Region + '"' + ', \n')
-        '''
-
         time.sleep(3)
 
-        if QR:
-            next = driver.find_element_by_xpath("//img[@alt='QR']")
-            next.click()
+        if qr:
+            button = driver.find_element_by_xpath("//img[@alt='QR']")
+            button.click()
 
         time.sleep(3)
 
@@ -145,40 +126,33 @@ def parse(gosReg, QR):
         driver.get(b_kontur_url)
         time.sleep(3)
 
-        OKPO = driver.find_elements_by_xpath("//dd")[2].text
-        item.OKPO = OKPO
-
-        '''
-        f.write('"OKPO" : ' + '"' + item.OKPO + '"' + ', \n')
-        f.write('}\n')
-
-        f.close()
-        '''
+        okpo = driver.find_elements_by_xpath("//dd")[2].text
+        item.OKPO = okpo
 
         driver.close()
 
         return item
 
 
-def dateToStr(aDate):
+def date_to_str(date):
     months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября',
               'декабря']
 
-    dateStr = '«‎' + str(aDate.day) + '»‎' + months[aDate.month - 1] + ' ' + str(aDate.year)
+    date_str = '« ' + str(date.day) + '» ' + months[date.month - 1] + ' ' + str(date.year)
 
-    return dateStr
+    return date_str
 
 
-def makePDF(Carrier, dateFrom, dateTo):
-    date = dateFrom
-    canvas = Canvas(Carrier.name.split()[0] + ".pdf", pagesize=A5)
+def make_pdf(carrier, date_from, date_to):
+    date = date_from
+    canvas = Canvas(carrier.name.split()[0] + ".pdf", pagesize=A5)
 
     pdfmetrics.registerFont(TTFont('FreeSans', 'FreeSans.ttf'))
     pdfmetrics.registerFont(TTFont('FreeSansBold', 'FreeSansBold.ttf'))
 
     i = 1
 
-    while date != dateTo + timedelta(days=1):
+    while date != date_to + timedelta(days=1):
         canvas.setFont('FreeSans', 8)
         canvas.setLineWidth(0.5)
 
@@ -231,54 +205,54 @@ def makePDF(Carrier, dateFrom, dateTo):
         canvas.line(46 * mm, 122.5 * mm, 74 * mm, 122.5 * mm)
 
         canvas.drawString(75 * mm, 138 * mm, 'Категория: ')
-        canvas.drawString(90 * mm, 138 * mm, Carrier.category)
+        canvas.drawString(90 * mm, 138 * mm, carrier.category)
 
         canvas.drawString(75 * mm, 142 * mm, 'Гаражный номер: ')
-        canvas.drawString(99 * mm, 142 * mm, Carrier.garajeNumber)
+        canvas.drawString(99 * mm, 142 * mm, carrier.garajeNumber)
 
         canvas.drawString(75 * mm, 148 * mm, 'Регистрационный № ')
-        canvas.drawString(103 * mm, 148 * mm, Carrier.regNum + ' ' + Carrier.NumberOfResolution)
+        canvas.drawString(103 * mm, 148 * mm, carrier.regNum + ' ' + carrier.NumberOfResolution)
 
         canvas.drawString(10 * mm, 138 * mm, 'Водительское удостоверение №')
-        canvas.drawString(53 * mm, 138 * mm, Carrier.driverLicense)
+        canvas.drawString(53 * mm, 138 * mm, carrier.driverLicense)
 
         canvas.drawString(10 * mm, 142 * mm, 'Водитель:')
         try:
-            canvas.drawString(24 * mm, 142 * mm, Carrier.name.split()[0] + '.' + Carrier.name.split()[1][0] + '.' +
-                              Carrier.name.split()[2][0])
+            canvas.drawString(24 * mm, 142 * mm, carrier.name.split()[0] + '.' + carrier.name.split()[1][0] + '.' +
+                              carrier.name.split()[2][0])
         except:
-            canvas.drawString(24 * mm, 142 * mm, Carrier.name.split()[0] + '.' + Carrier.name.split()[1][0])
+            canvas.drawString(24 * mm, 142 * mm, carrier.name.split()[0] + '.' + carrier.name.split()[1][0])
 
         canvas.drawString(10 * mm, 148 * mm, 'Лицензионная карточка: стандартная')
 
         canvas.drawString(10 * mm, 152 * mm, 'Государственный номерной знак: ')
-        canvas.drawString(55 * mm, 152 * mm, Carrier.gosReg)
+        canvas.drawString(55 * mm, 152 * mm, carrier.gosReg)
 
         canvas.drawString(10 * mm, 156 * mm, 'Марка и модель автомобиля: ')
-        canvas.drawString(49 * mm, 156 * mm, Carrier.markAuto + ' ' + Carrier.modelAuto)
+        canvas.drawString(49 * mm, 156 * mm, carrier.markAuto + ' ' + carrier.modelAuto)
 
         canvas.drawString(10 * mm, 159 * mm, 'Организация: ')
-        canvas.drawString(29 * mm, 159 * mm, Carrier.CompeteUL)
+        canvas.drawString(29 * mm, 159 * mm, carrier.CompeteUL)
 
         canvas.drawString(10 * mm, 192 * mm, 'Телефон: ')
-        canvas.drawString(25 * mm, 192 * mm, Carrier.phoneNumber)
+        canvas.drawString(25 * mm, 192 * mm, carrier.phoneNumber)
 
         canvas.drawString(10 * mm, 196 * mm, 'Адрес: ')
-        canvas.drawString(20 * mm, 196 * mm, Carrier.address)
+        canvas.drawString(20 * mm, 196 * mm, carrier.address)
 
         canvas.drawString(10 * mm, 200 * mm, 'Перевозчик: ')
-        canvas.drawString(27 * mm, 200 * mm, Carrier.carrier)
+        canvas.drawString(27 * mm, 200 * mm, carrier.carrier)
 
         canvas.drawString(105 * mm, 192 * mm, 'ОГРН: ')
-        canvas.drawString(116 * mm, 192 * mm, Carrier.ogrn)
+        canvas.drawString(116 * mm, 192 * mm, carrier.ogrn)
 
         canvas.drawString(112 * mm, 196 * mm, 'ИНН: ')
-        canvas.drawString(120 * mm, 196 * mm, Carrier.inn)
+        canvas.drawString(120 * mm, 196 * mm, carrier.inn)
 
         canvas.drawString(113 * mm, 200 * mm, 'ОКПО: ')
-        canvas.drawString(124 * mm, 200 * mm, Carrier.OKPO)
+        canvas.drawString(124 * mm, 200 * mm, carrier.OKPO)
 
-        canvas.drawString(63 * mm, 175 * mm, dateToStr(date))
+        canvas.drawString(63 * mm, 175 * mm, date_to_str(date))
 
         canvas.setFont('FreeSans', 6)
 
@@ -332,9 +306,9 @@ def makePDF(Carrier, dateFrom, dateTo):
         canvas.drawString(64 * mm, 182 * mm, 'серия:')
         try:
             canvas.drawString(72 * mm, 182 * mm,
-                              Carrier.CompeteUL.split()[2][0] + Carrier.CompeteUL.split()[3][0] + ' № ' + str(i))
+                              carrier.CompeteUL.split()[2][0] + carrier.CompeteUL.split()[3][0] + ' № ' + str(i))
         except:
-            canvas.drawString(72 * mm, 182 * mm, Carrier.CompeteUL[4] + Carrier.CompeteUL[5] + ' № ' + str(i))
+            canvas.drawString(72 * mm, 182 * mm, carrier.CompeteUL[4] + carrier.CompeteUL[5] + ' № ' + str(i))
 
         canvas.showPage()
         date += timedelta(days=1)
@@ -343,7 +317,7 @@ def makePDF(Carrier, dateFrom, dateTo):
     canvas.save()
 
 
-def makeCarrierFromJSON(data):
+def make_carrier_from_json(data):
     man = Carrier()
     man.status = data['status']
     man.date = data['date']
@@ -384,11 +358,11 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
 
         f = open("demofile2.txt", "r")
         for line in f:
-            self.bd.append(makeCarrierFromJSON(json.loads(line)))
+            self.bd.append(make_carrier_from_json(json.loads(line)))
 
         f.close()
 
-    def makeExcel(self, Carrier):
+    def make_excel(self, carrier):
         key = False
         id = 0
 
@@ -402,20 +376,20 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
             print('Vse ok))')
         '''
 
-        df2 = [Carrier.name, Carrier.gosReg, self.dateEditFrom.date().toString('dd/MM/yy'),
+        df2 = [carrier.name, carrier.gosReg, self.dateEditFrom.date().toString('dd/MM/yy'),
                self.dateEditTo.date().toString('dd/MM/yy'), self.spinBoxSumm.text(),
                str(self.checkBoxNalichka.isChecked()), self.lineEditPhoneOfVodila.text(),
                str(self.checkBoxQR.isChecked())]
 
         for name in top_players['Ф.И.О водителя']:
-            if name == Carrier.name:
+            if name == carrier.name:
                 key = True
                 break
             id += 1
 
         if key:
             # top_players['Ф.И.О водителя'][id] = 'AAAAAA'
-            top_players['АВТО'][id] = Carrier.gosReg
+            top_players['АВТО'][id] = carrier.gosReg
             top_players['с'][id] = self.dateEditFrom.date().toPyDate()
             top_players['по'][id] = self.dateEditTo.date().toPyDate()
             top_players['Сумма'][id] = self.spinBoxSumm.text()
@@ -429,7 +403,6 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
 
         writer = pd.ExcelWriter('listBase.xlsx', engine='xlsxwriter', date_format='dd/mm/yy')
         top_players.to_excel(writer, index=False)
-        workbook = writer.book
         worksheet = writer.sheets['Sheet1']
 
         for col in range(len(top_players.columns)):
@@ -442,7 +415,7 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
 
             worksheet.set_column(col, col, max_len + 5)
 
-        #worksheet.set_column(2, 3, cell_format = format2)
+        # worksheet.set_column(2, 3, cell_format = format2)
         writer.save()
 
     def auto_fill(self):
@@ -471,7 +444,8 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
         flag = False
 
         for carrier in self.bd:
-            if self.gosNum.text().lower() == carrier.gosReg.lower() and self.name.text().lower() == carrier.name.lower():
+            if self.gosNum.text().lower() == carrier.gosReg.lower() and \
+                    self.name.text().lower() == carrier.name.lower():
                 self.carrierFromBDNum = i
                 flag = True
 
@@ -481,11 +455,11 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
 
     def work(self):
         print(self.loadFromBD)
-        print(self.check_gosnum())
+        print(self.check_gosnum)
 
-        if not self.loadFromBD and not self.check_gosnum():
+        if not self.loadFromBD and not self.check_gosnum:
             carrier_for_parse = Carrier()
-            carrier_for_parse = parse(self.gosNum.text(), self.checkBoxQR.isChecked())
+            carrier_for_parse = parse_info(self.gosNum.text(), self.checkBoxQR.isChecked())
             carrier_for_parse.name = self.name.text()
             carrier_for_parse.address = self.addres.text()
             carrier_for_parse.phoneNumber = self.phoneNumber.text()
@@ -495,16 +469,16 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
 
             self.bd.append(carrier_for_parse)
 
-            jsonStr = json.dumps(carrier_for_parse.__dict__, ensure_ascii=False)
+            json_str = json.dumps(carrier_for_parse.__dict__, ensure_ascii=False)
 
             f = open("demofile2.txt", "a")
             f.write('\n')
-            f.write(jsonStr)
+            f.write(json_str)
             f.close()
 
-            makePDF(self.bd[len(self.bd) - 1], self.dateEditFrom.date().toPyDate(), self.dateEditTo.date().toPyDate())
+            make_pdf(self.bd[len(self.bd) - 1], self.dateEditFrom.date().toPyDate(), self.dateEditTo.date().toPyDate())
 
-        if not self.loadFromBD and self.check_gosnum():
+        if not self.loadFromBD and self.check_gosnum:
             self.bd[self.carrierFromBDNum].name = self.name.text()
             self.bd[self.carrierFromBDNum].address = self.addres.text()
             self.bd[self.carrierFromBDNum].phoneNumber = self.phoneNumber.text()
@@ -512,14 +486,14 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
             self.bd[self.carrierFromBDNum].driverLicense = self.driverLicense.text()
             self.bd[self.carrierFromBDNum].category = self.category.text()
 
-            jsonStr = json.dumps(self.bd[self.carrierFromBDNum].__dict__, ensure_ascii=False)
+            json_str = json.dumps(self.bd[self.carrierFromBDNum].__dict__, ensure_ascii=False)
             f = open("demofile2.txt", "a")
             f.write('\n')
-            f.write(jsonStr)
+            f.write(json_str)
             f.close()
 
-            makePDF(self.bd[self.carrierFromBDNum], self.dateEditFrom.date().toPyDate(),
-                    self.dateEditTo.date().toPyDate())
+            make_pdf(self.bd[self.carrierFromBDNum], self.dateEditFrom.date().toPyDate(),
+                     self.dateEditTo.date().toPyDate())
 
         else:
             self.bd[self.carrierFromBDNum].name = self.name.text()
@@ -528,11 +502,11 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
             self.bd[self.carrierFromBDNum].garajeNumber = self.garajeNumber.text()
             self.bd[self.carrierFromBDNum].driverLicense = self.driverLicense.text()
             self.bd[self.carrierFromBDNum].category = self.category.text()
-            makePDF(self.bd[self.carrierFromBDNum], self.dateEditFrom.date().toPyDate(),
-                    self.dateEditTo.date().toPyDate())
+            make_pdf(self.bd[self.carrierFromBDNum], self.dateEditFrom.date().toPyDate(),
+                     self.dateEditTo.date().toPyDate())
             self.loadFromBD = False
 
-        self.makeExcel(self.bd[len(self.bd) - 1])
+        self.make_excel(self.bd[len(self.bd) - 1])
         self.auto_fill()
 
 
