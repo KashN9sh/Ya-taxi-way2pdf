@@ -50,3 +50,4 @@ scrapy_env/lib/python3.7/site-packages/idna/intranges.py
 scrapy_env/lib/python3.7/site-packages/idna/package_data.py
 scrapy_env/lib/python3.7/site-packages/idna/py.typed
 scrapy_env/lib/python3.7/site-packages/idna/uts46data.py
+/scrapy_env/
