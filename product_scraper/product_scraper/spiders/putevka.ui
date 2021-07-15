@@ -25,16 +25,6 @@
   <property name="windowTitle">
    <string>Dialog</string>
   </property>
-  <widget class="QLineEdit" name="gosNum">
-   <property name="geometry">
-    <rect>
-     <x>150</x>
-     <y>26</y>
-     <width>125</width>
-     <height>21</height>
-    </rect>
-   </property>
-  </widget>
   <widget class="QLineEdit" name="name">
    <property name="geometry">
     <rect>
@@ -306,6 +296,16 @@
    </property>
    <property name="text">
     <string>Наличка</string>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="gosNum">
+   <property name="geometry">
+    <rect>
+     <x>150</x>
+     <y>30</y>
+     <width>131</width>
+     <height>26</height>
+    </rect>
    </property>
   </widget>
  </widget>

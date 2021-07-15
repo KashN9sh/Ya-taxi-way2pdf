@@ -52,7 +52,7 @@ def parse_info(gos_reg, qr):
         mtdi_url = f'https://mtdi.mosreg.ru/deyatelnost/celevye-programmy/taksi1/' \
                    f'proverka-razresheniya-na-rabotu-taksi?{urllib.parse.urlencode(params)} '
 
-        driver = webdriver.Chrome('chromedriver.exe')
+        driver = webdriver.Safari()
         driver.get(mtdi_url)
         item = Carrier()
 
@@ -355,7 +355,7 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
         super().__init__()
         self.setupUi(self)
         self.workbtn.clicked.connect(self.work)
-        self.gosNum.textChanged.connect(self.auto_fill)
+        self.gosNum.currentTextChanged.connect(self.auto_fill)
         self.name.textChanged.connect(self.auto_fill)
 
         f = open("demofile2.txt", "r")
@@ -376,6 +376,9 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
 
         self.name.setCompleter(name_completer)
         self.gosNum.setCompleter(gos_num_completer)
+        self.gosNum.addItems(self.gos_nums)
+        self.gosNum.setEditable(True)
+
 
     def make_excel(self, carrier):
         key = False
@@ -437,10 +440,10 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
         i = 0
         for carrier in self.bd:
             if self.name.text() != '':
-                if self.gosNum.text().lower() == carrier.gosReg.lower() and self.name.text().split()[0].lower() == \
+                if self.gosNum.currentText().lower() == carrier.gosReg.lower() and self.name.text().split()[0].lower() == \
                         carrier.name.split()[0].lower():
-                    self.gosNum.setText(carrier.gosReg)
-                    self.name.setText(carrier.name)
+                    #self.gosNum.setText(carrier.gosReg)
+                    #self.name.setText(carrier.name)
                     self.addres.setText(carrier.address)
                     self.phoneNumber.setText(carrier.phoneNumber)
                     self.garajeNumber.setText(carrier.garajeNumber)
