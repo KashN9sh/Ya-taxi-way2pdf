@@ -2,6 +2,7 @@ import time
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from dateutil import parser
+import datetime
 
 class Fine:
     date: datetime.date
@@ -55,7 +56,7 @@ def parse_info(gos_reg, region, registration):
 
     driver.close()
 
-     return fines_array
+    return fines_array
 
 
 parse_info('У468ВХ', '797', '9931918970')
