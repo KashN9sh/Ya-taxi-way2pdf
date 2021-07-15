@@ -10,21 +10,40 @@ headers = {
     'X-API-Key': 'zohhKIuBMdIpJTEiKzrePMQIUuHXDyNFgRrSf',
 }
 
-response_str = ''
+'''
+response = requests.get(url, headers=headers)
+print(response.status_code)
+print(response.json())
+'''
+
+shtrul_array =[]
 
 data = {"query": {"park": {"id": "e96b6ddf4309416ba66bc8f801bc847f",
-                           "driver_profile": {"work_rule_id": ["de98224d038a4f98a10b0fd8bf967efe"],
+                           "driver_profile": {"work_rule_id": ["de98224d038a4f98a10b0fd8bf967efe",
+                                                               "badd1c9d6b6b4e9fb9e0b48367850467"],
                                               "work_status": ["working", "not_working"]}}}}
 response = requests.post(URL_AUTH, headers=headers, json=data)
 print(response.status_code)
 print(len(response.json()['driver_profiles']))
 
+car_number =[]
+region = []
+sts = []
+
 for i in range(len(response.json()['driver_profiles'])):
-    print(i)
     if 'car' in response.json()['driver_profiles'][i]:
-        print(response.json()['driver_profiles'][i]['car']['number'])
+        car_number.append(response.json()['driver_profiles'][i]['car']['number'][0:5])
+        region.append(response.json()['driver_profiles'][i]['car']['number'][6:])
         if 'registration_cert' in response.json()['driver_profiles'][i]['car']:
-            print(response.json()['driver_profiles'][i]['car']['registration_cert'])
+            sts.append(response.json()['driver_profiles'][i]['car']['registration_cert'])
+        else:
+            sts.append('')
 
+shtrul_array.append(car_number)
+shtrul_array.append(region)
+shtrul_array.append(sts)
 
+print(shtrul_array[0][0])
+print(shtrul_array[1][0])
+print(shtrul_array[2][0])
 'У468ВХ797'
