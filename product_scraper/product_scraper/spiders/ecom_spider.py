@@ -335,7 +335,7 @@ def make_carrier_from_json(data):
     man.Region = data['Region']
     man.OKPO = data['OKPO']
     man.name = data['name']
-    man.address = data['addres']
+    man.address = data['address']
     man.phoneNumber = data['phoneNumber']
     man.garajeNumber = data['garajeNumber']
     man.driverLicense = data['driverLicense']
