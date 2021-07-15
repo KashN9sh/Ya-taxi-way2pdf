@@ -346,6 +346,8 @@ def make_carrier_from_json(data):
 
 class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
     bd = []
+    names = []
+    gos_nums = []
     loadFromBD = False
     carrierFromBDNum = 0
 
@@ -361,6 +363,19 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
             self.bd.append(make_carrier_from_json(json.loads(line)))
 
         f.close()
+
+        for carrier in self.bd:
+            self.names.append(carrier.name)
+            self.gos_nums.append(carrier.gosReg)
+
+        name_completer = QtWidgets.QCompleter(self.names, self)
+        name_completer.setCaseSensitivity(False)
+
+        gos_num_completer = QtWidgets.QCompleter(self.gos_nums, self)
+        gos_num_completer.setCaseSensitivity(False)
+
+        self.name.setCompleter(name_completer)
+        self.gosNum.setCompleter(gos_num_completer)
 
     def make_excel(self, carrier):
         key = False
