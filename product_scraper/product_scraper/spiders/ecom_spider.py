@@ -462,7 +462,7 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
         flag = False
 
         for carrier in self.bd:
-            if self.gosNum.text().lower() == carrier.gosReg.lower() and \
+            if self.gosNum.currentText().lower() == carrier.gosReg.lower() and \
                     self.name.text().lower() == carrier.name.lower():
                 self.carrierFromBDNum = i
                 flag = True
@@ -473,9 +473,9 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
 
     def work(self):
         print(self.loadFromBD)
-        print(self.check_gosnum)
+        print(self.check_gosnum())
 
-        if not self.loadFromBD and not self.check_gosnum:
+        if not self.loadFromBD and not self.check_gosnum():
             carrier_for_parse = Carrier()
             carrier_for_parse = parse_info(self.gosNum.text(), self.checkBoxQR.isChecked())
             carrier_for_parse.name = self.name.text()
@@ -496,7 +496,7 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
 
             make_pdf(self.bd[len(self.bd) - 1], self.dateEditFrom.date().toPyDate(), self.dateEditTo.date().toPyDate())
 
-        if not self.loadFromBD and self.check_gosnum:
+        if not self.loadFromBD and self.check_gosnum():
             self.bd[self.carrierFromBDNum].name = self.name.text()
             self.bd[self.carrierFromBDNum].address = self.addres.text()
             self.bd[self.carrierFromBDNum].phoneNumber = self.phoneNumber.text()
