@@ -1,36 +1,39 @@
 import requests
+from uuid import uuid4
 
-URL_AUTH = 'https://fleet-api.taxi.yandex.net/v1/parks/driver-profiles/list'
-url = 'https://fleet-api.taxi.yandex.net/v1/parks/driver-work-rules?park_id=e96b6ddf4309416ba66bc8f801bc847f'
+URL_AUTH = 'https://fleet-api.taxi.yandex.net/v2/parks/driver-profiles/transactions'
+url = 'https://fleet-api.taxi.yandex.net/v2/parks/transactions/categories/list'
 
 # {'id': 'de98224d038a4f98a10b0fd8bf967efe', 'is_enabled': True, 'name': 'Арендники Я-Таксист'},
-# {'id': 'c2603982987c4a308e47846873f7a525', 'is_enabled': True, 'name': 'Особые условия'}
-
+#'id': '023e46118ba74f1c92f2a7189af6c68b' - Petya
 headers = {
+    #'Accept-Language':'ru',
     'X-Client-ID': 'taxi/park/e96b6ddf4309416ba66bc8f801bc847f',
     'X-API-Key': 'zohhKIuBMdIpJTEiKzrePMQIUuHXDyNFgRrSf',
+    'X-Idempotency-Token': str(uuid4())
 }
-
 '''
-response = requests.get(url, headers=headers)
+data = {"query": {
+                  "park": {"id": "e96b6ddf4309416ba66bc8f801bc847f"
+                           }
+                  }
+        }
+
+response = requests.post(url, headers=headers,json=data)
 print(response.status_code)
 print(response.json())
-'''
+
 
 shtrul_array =[]
 '''
-data = {"query": {"park": {"id": "e96b6ddf4309416ba66bc8f801bc847f",
-                           "driver_profile": {"work_rule_id": ["de98224d038a4f98a10b0fd8bf967efe",
-                                                               "badd1c9d6b6b4e9fb9e0b48367850467"],
-                                              "work_status": ["working", "not_working"]}}}}
-'''
-data = {"query": {"park": {"id": "e96b6ddf4309416ba66bc8f801bc847f",
-                           "driver_profile": {"work_rule_id": ["c2603982987c4a308e47846873f7a525"],
-                                              "work_status": ["working", "not_working"]}}}}
-
+data = {"amount": "-5" ,
+        "category_id": "partner_service_manual",
+        "description": "test",
+        "driver_profile_id": "023e46118ba74f1c92f2a7189af6c68b",
+        "park_id": "e96b6ddf4309416ba66bc8f801bc847f"}
 response = requests.post(URL_AUTH, headers=headers, json=data)
 print(response.status_code)
-print((response.json()['driver_profiles']))
+print(response.json())
 '''
 car_number =[]
 region = []
@@ -49,7 +52,8 @@ shtrul_array.append(car_number)
 shtrul_array.append(region)
 shtrul_array.append(sts)
 
-print(shtrul_array)
-
+print(shtrul_array[0][0])
+print(shtrul_array[1][0])
+print(shtrul_array[2][0])
 'У468ВХ797'
 '''
