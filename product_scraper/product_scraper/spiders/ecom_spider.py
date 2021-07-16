@@ -52,7 +52,7 @@ def parse_info(gos_reg, qr):
         mtdi_url = f'https://mtdi.mosreg.ru/deyatelnost/celevye-programmy/taksi1/' \
                    f'proverka-razresheniya-na-rabotu-taksi?{urllib.parse.urlencode(params)} '
 
-        driver = webdriver.Safari()
+        driver = webdriver.Chrome('chromedriver.exe')
         driver.get(mtdi_url)
         item = Carrier()
 
@@ -477,7 +477,7 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
 
         if not self.loadFromBD and not self.check_gosnum():
             carrier_for_parse = Carrier()
-            carrier_for_parse = parse_info(self.gosNum.text(), self.checkBoxQR.isChecked())
+            carrier_for_parse = parse_info(self.gosNum.currentText(), self.checkBoxQR.isChecked())
             carrier_for_parse.name = self.name.text()
             carrier_for_parse.address = self.addres.text()
             carrier_for_parse.phoneNumber = self.phoneNumber.text()
