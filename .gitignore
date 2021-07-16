@@ -51,3 +51,5 @@ scrapy_env/lib/python3.7/site-packages/idna/package_data.py
 scrapy_env/lib/python3.7/site-packages/idna/py.typed
 scrapy_env/lib/python3.7/site-packages/idna/uts46data.py
 /scrapy_env/
+product_scraper/product_scraper/spiders/listBase.xlsx
+product_scraper/product_scraper/spiders/chromedriver.exe
