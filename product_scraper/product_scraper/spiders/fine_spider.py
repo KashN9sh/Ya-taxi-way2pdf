@@ -79,7 +79,7 @@ def parse_info(gos_reg, region, registration):
         time.sleep(3)
 
     fines_count = len(driver.find_elements_by_xpath("//div[@class='checkResult']/ul[@class='finesItem']"))
-    print(fines_count)
+
     for i in range(fines_count):
 
         date_str = driver.find_elements_by_xpath("//div[@class='checkResult']/"
@@ -101,18 +101,20 @@ def parse_info(gos_reg, region, registration):
 def print_fines_array(array):
     print(len(array))
     for i in range(len(array)):
-        print(i + 1)
-        print(array[i].date)
-        print(array[i].time)
-        print(array[i].decree)
-        print(array[i].cost)
-        print('---------------------')
+        for j in range(len(array[i])):
+            print(j + 1)
+            print(array[i][j].date)
+            print(array[i][j].time)
+            print(array[i][j].decree)
+            print(array[i][j].cost)
+            print('---------------------')
+        print('#################')
 
 
 shtruls = get_shtruls_from_api()
+fines_array = []
 for i in range(len(shtruls[0])):
-    fines_array = []
-    fines_array = parse_info(shtruls[0][i], shtruls[1][i], shtruls[2][i])
+    fines_array.append(parse_info(shtruls[0][i], shtruls[1][i], shtruls[2][i]))
     print_fines_array(fines_array)
 #parse_info('У468ВХ', '797', '9931918970')
 
