@@ -105,15 +105,17 @@ def parse_info(gos_reg, region, registration):
 
     return fines_array
 
-def print_fines_array(array):
+def print_fines_array(array, shtrul):
     print(len(array))
     for i in range(len(array)):
         for j in range(len(array[i])):
             print(j + 1)
-            print(array[i][j].date)
-            print(array[i][j].time)
-            print(array[i][j].decree)
-            print(array[i][j].cost)
+            data = {"amount": '-' + array[i][j].cost,
+                    "category_id": 'partner_service_manual',
+                    "description": f'списание средств для оплаты штрафа постановление № "{array[i][j].decree}"',
+                    "driver_profile_id": shtrul.driver_id,
+                    "park_id": "e96b6ddf4309416ba66bc8f801bc847f"}
+            print(data['description'])
             print('---------------------')
         print('#################')
 
@@ -125,7 +127,7 @@ shtruls = get_shtruls_from_api()
 fines_array = []
 for i in range(len(shtruls)):
     fines_array.append(parse_info(shtruls[i].car_number, shtruls[i].region, shtruls[i].sts))
-    print_fines_array(fines_array)
+    print_fines_array(fines_array,shtruls[i])
 #parse_info('У468ВХ', '797', '9931918970')
 
 
