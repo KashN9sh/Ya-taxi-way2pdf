@@ -17,6 +17,18 @@ class Fine:
         self.decree = decree
         self.cost = cost
 
+class Shtrul:
+    car_number : str
+    region : str
+    sts : str
+    driver_id : str
+
+    def __init__(self, car_number, region, sts, driver_id):
+        self.car_number = car_number
+        self.region = region
+        self.sts = sts
+        self.driver_id = driver_id
+
 def get_shtruls_from_api():
     url_auth = 'https://fleet-api.taxi.yandex.net/v1/parks/driver-profiles/list'
 
@@ -33,22 +45,17 @@ def get_shtruls_from_api():
                                                   "work_status": ["working", "not_working"]}}}}
     response = requests.post(url_auth, headers=headers, json=data)
 
-    car_number = []
-    region = []
-    sts = []
-
     for i in range(len(response.json()['driver_profiles'])):
         if 'car' in response.json()['driver_profiles'][i]:
-            car_number.append(response.json()['driver_profiles'][i]['car']['number'][0:6])
-            region.append(response.json()['driver_profiles'][i]['car']['number'][6:])
+            car_number = response.json()['driver_profiles'][i]['car']['number'][0:6]
+            region = response.json()['driver_profiles'][i]['car']['number'][6:]
             if 'registration_cert' in response.json()['driver_profiles'][i]['car']:
-                sts.append(response.json()['driver_profiles'][i]['car']['registration_cert'])
+                sts = response.json()['driver_profiles'][i]['car']['registration_cert']
             else:
-                sts.append('')
+                sts = ''
+            driver_id = response.json()['driver_profiles'][i]['driver_profile']['id']
 
-    shtrul_array.append(car_number)
-    shtrul_array.append(region)
-    shtrul_array.append(sts)
+        shtrul_array.append(Shtrul(car_number, region, sts, driver_id))
 
     return shtrul_array
 
@@ -110,11 +117,14 @@ def print_fines_array(array):
             print('---------------------')
         print('#################')
 
+#def fines_pay(shtrul, fines_array):
+
+
 
 shtruls = get_shtruls_from_api()
 fines_array = []
-for i in range(len(shtruls[0])):
-    fines_array.append(parse_info(shtruls[0][i], shtruls[1][i], shtruls[2][i]))
+for i in range(len(shtruls)):
+    fines_array.append(parse_info(shtruls[i].car_number, shtruls[i].region, shtruls[i].sts))
     print_fines_array(fines_array)
 #parse_info('У468ВХ', '797', '9931918970')
 
