@@ -1,16 +1,21 @@
 import time
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
-from dateutil import parser
-import datetime
 import requests
+from uuid import uuid4
 
 
 class Fine:
-    date: datetime.date
-    time: datetime.time
-    decree: int
-    cost: int
+    date: str
+    time: str
+    decree: str
+    cost: str
+
+    def __init__(self, date, time, decree, cost):
+        self.date = date
+        self.time = time
+        self.decree = decree
+        self.cost = cost
 
 def get_shtruls_from_api():
     url_auth = 'https://fleet-api.taxi.yandex.net/v1/parks/driver-profiles/list'
@@ -23,8 +28,8 @@ def get_shtruls_from_api():
     shtrul_array = []
 
     data = {"query": {"park": {"id": "e96b6ddf4309416ba66bc8f801bc847f",
-                               "driver_profile": {"work_rule_id": ["de98224d038a4f98a10b0fd8bf967efe",
-                                                                   "badd1c9d6b6b4e9fb9e0b48367850467"],
+                               "driver_profile": {"work_rule_id": ["de98224d038a4f98a10b0fd8bf967efe",],
+                                                                   #"badd1c9d6b6b4e9fb9e0b48367850467"],
                                                   "work_status": ["working", "not_working"]}}}}
     response = requests.post(url_auth, headers=headers, json=data)
 
@@ -74,31 +79,41 @@ def parse_info(gos_reg, region, registration):
         time.sleep(3)
 
     fines_count = len(driver.find_elements_by_xpath("//div[@class='checkResult']/ul[@class='finesItem']"))
+    print(fines_count)
+    for i in range(fines_count):
 
-    for i in range(fines_count - 1):
-        current_fine = Fine
         date_str = driver.find_elements_by_xpath("//div[@class='checkResult']/"
                                                  "ul[@class='finesItem']/li/span[@class='field fine-datedecis']")[
             i].text
+
         decree_str = driver.find_elements_by_xpath("//div[@class='checkResult']/"
                                                    "ul[@class='finesItem']/li/span[@class='field fine-datepost']")[
             i].text
         cost_str = driver.find_elements_by_xpath("//div[@class='checkResult']/"
                                                  "ul[@class='finesItem']/li/span[@class='field fine-summa']")[i].text
 
-        current_fine.date = parser.parse(date_str.split()[0])
-        current_fine.time = parser.parse(date_str.split()[2])
-        current_fine.decree = decree_str.split()[0]
-        current_fine.cost = cost_str.split()[0]
-
-        fines_array.append(current_fine)
+        fines_array.append(Fine(date_str.split()[0], date_str.split()[2], decree_str.split()[0], cost_str.split()[0]))
 
     driver.close()
 
     return fines_array
 
+def print_fines_array(array):
+    print(len(array))
+    for i in range(len(array)):
+        print(i + 1)
+        print(array[i].date)
+        print(array[i].time)
+        print(array[i].decree)
+        print(array[i].cost)
+        print('---------------------')
+
+
 shtruls = get_shtruls_from_api()
 for i in range(len(shtruls[0])):
-    parse_info(shtruls[0][i], shtruls[1][i], shtruls[2][i])
-
+    fines_array = []
+    fines_array = parse_info(shtruls[0][i], shtruls[1][i], shtruls[2][i])
+    print_fines_array(fines_array)
 #parse_info('У468ВХ', '797', '9931918970')
+
+
