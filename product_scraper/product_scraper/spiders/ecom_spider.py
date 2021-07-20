@@ -52,7 +52,7 @@ def parse_info(gos_reg, qr):
         mtdi_url = f'https://mtdi.mosreg.ru/deyatelnost/celevye-programmy/taksi1/' \
                    f'proverka-razresheniya-na-rabotu-taksi?{urllib.parse.urlencode(params)} '
 
-        driver = webdriver.Safari()
+        driver = webdriver.Chrome('chromedriver.exe')
         driver.get(mtdi_url)
         item = Carrier()
 
