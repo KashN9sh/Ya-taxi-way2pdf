@@ -4,6 +4,14 @@ from selenium.common.exceptions import NoSuchElementException
 import requests
 from uuid import uuid4
 
+URL_AUTH = 'https://fleet-api.taxi.yandex.net/v2/parks/driver-profiles/transactions'
+
+headers = {
+    #'Accept-Language':'ru',
+    'X-Client-ID': 'taxi/park/e96b6ddf4309416ba66bc8f801bc847f',
+    'X-API-Key': 'zohhKIuBMdIpJTEiKzrePMQIUuHXDyNFgRrSf',
+    'X-Idempotency-Token': str(uuid4())
+}
 
 class Fine:
     date: str
@@ -105,29 +113,46 @@ def parse_info(gos_reg, region, registration):
 
     return fines_array
 
-def print_fines_array(array, shtrul):
-    print(len(array))
+def print_fines_array(array, shtrul, bd):
+    f = open("decrees.txt", "a")
+    flag = False
     for i in range(len(array)):
         for j in range(len(array[i])):
-            print(j + 1)
-            data = {"amount": '-' + array[i][j].cost,
-                    "category_id": 'partner_service_manual',
-                    "description": f'списание средств для оплаты штрафа постановление № "{array[i][j].decree}"',
-                    "driver_profile_id": shtrul.driver_id,
-                    "park_id": "e96b6ddf4309416ba66bc8f801bc847f"}
-            print(data['description'])
-            print('---------------------')
+            for decree in bd:
+                if decree != shtrul.driver_id:
+                    flag = True
+                else:
+                    flag = False
+
+            if flag:
+                print(j + 1)
+                data = {"amount": '-' + array[i][j].cost,
+                        "category_id": 'partner_service_manual',
+                        "description": f'списание средств для оплаты штрафа постановление № "{array[i][j].decree}"',
+                        "driver_profile_id": shtrul.driver_id,
+                        "park_id": "e96b6ddf4309416ba66bc8f801bc847f"}
+                print(data['description'])
+                print('---------------------')
+                f.write('\n')
+                f.write(shtrul.driver_id)
         print('#################')
+
+def get_decrees_from_bd():
+    f = open("decrees.txt", "r")
+    decrees = []
+    for line in f:
+        decrees.append(line)
+    f.close()
+    return decrees
 
 #def fines_pay(shtrul, fines_array):
 
-
-
+decrees_in_bd = get_decrees_from_bd()
 shtruls = get_shtruls_from_api()
 fines_array = []
 for i in range(len(shtruls)):
     fines_array.append(parse_info(shtruls[i].car_number, shtruls[i].region, shtruls[i].sts))
-    print_fines_array(fines_array,shtruls[i])
+    print_fines_array(fines_array,shtruls[i],decrees_in_bd)
 #parse_info('У468ВХ', '797', '9931918970')
 
 
