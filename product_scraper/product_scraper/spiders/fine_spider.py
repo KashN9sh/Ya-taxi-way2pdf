@@ -7,7 +7,7 @@ import datetime
 
 #URL_AUTH = 'https://fleet-api.taxi.yandex.net/v2/parks/driver-profiles/transactions'
 
-dateFormatter = "%d/%m/%Y %H:%M:%S"
+dateFormatter = "%d.%m.%Y %H:%M"
 hours = 1
 hours_added = datetime.timedelta(hours = hours)
 '''headers = {
@@ -97,7 +97,7 @@ def parse_info(gos_reg, region, registration):
     button = driver.find_element_by_xpath("//a[@class='checker']")
     button.click()
 
-    time.sleep(5)
+    time.sleep(20)
 
     if check_exists_by_xpath("//button[@class='close_modal_window']"):
         button = driver.find_element_by_xpath("//button[@class='close_modal_window']")
@@ -126,6 +126,7 @@ def parse_info(gos_reg, region, registration):
 
 def check_orders(fines_array, shtruls):
     final_fines_array = []
+    shtrul_fines = []
     URL_AUTH = 'https://fleet-api.taxi.yandex.net/v1/parks/orders/list'
 
     headers = {
@@ -144,10 +145,10 @@ def check_orders(fines_array, shtruls):
                         "driver_profile": {"id": shtruls[i].driver_id},
                         "order": {
                             "booked_at": {
-                                "from": (datetime.strptime(fines_array[i][j].date + ' ' + fines_array[i][j].time,
+                                "from": (datetime.datetime.strptime(fines_array[i][j].date + ' ' + fines_array[i][j].time,
                                                           dateFormatter).astimezone().replace(microsecond=0) - hours_added).isoformat(),
 
-                                 "to": (datetime.strptime(fines_array[i][j].date + ' ' + fines_array[i][j].time,
+                                 "to": (datetime.datetime.strptime(fines_array[i][j].date + ' ' + fines_array[i][j].time,
                                                           dateFormatter).astimezone().replace(microsecond=0) + hours_added).isoformat()
                             }
                         }
@@ -157,17 +158,21 @@ def check_orders(fines_array, shtruls):
 
             response = requests.post(URL_AUTH, headers=headers, json=data)
 
-            if response.json()['orders'] != []:
-                final_fines_array.append(fines_array[i])
+            if len(response.json()['orders']) != 0:
+                shtrul_fines.append(fines_array[i][j])
+                print(fines_array[i][j].decree)
             print(response.status_code)
-            print(response.json())
+            print(len(response.json()['orders']))
+
+        final_fines_array.append(shtrul_fines)
+        shtrul_fines = []
 
     return final_fines_array
 
 
 def print_fines_array(fines_array, shtruls, bd):
     f = open("decrees.txt", "a")
-    flag = False
+    flag = True
     for i in range(len(fines_array)):
         for j in range(len(fines_array[i])):
             for decree in bd:
@@ -205,8 +210,9 @@ decrees_in_bd = get_decrees_from_bd()
 shtruls = get_shtruls_from_api()
 first_fines_array = []
 final_fines_array = []
-for i in range(len(shtruls)):
-    first_fines_array.append(parse_info(shtruls[i].car_number, shtruls[i].region, shtruls[i].sts))
+#for i in range(len(shtruls)):
+
+first_fines_array.append(parse_info(shtruls[0].car_number, shtruls[0].region, shtruls[0].sts))
 
 final_fines_array = check_orders(first_fines_array, shtruls)
 print_fines_array(final_fines_array, shtruls, decrees_in_bd)
