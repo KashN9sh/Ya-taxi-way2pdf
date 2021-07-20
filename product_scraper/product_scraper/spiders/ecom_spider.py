@@ -52,7 +52,7 @@ def parse_info(gos_reg, qr):
         mtdi_url = f'https://mtdi.mosreg.ru/deyatelnost/celevye-programmy/taksi1/' \
                    f'proverka-razresheniya-na-rabotu-taksi?{urllib.parse.urlencode(params)} '
 
-        driver = webdriver.Chrome('chromedriver.exe')
+        driver = webdriver.Safari()
         driver.get(mtdi_url)
         item = Carrier()
 
@@ -385,14 +385,16 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
         id = 0
 
         top_players = pd.read_excel('listBase.xlsx')
-        '''
-        ЗАПУСТИТЬ ЕСЛИ КРАШНЕТСЯ!!!
+
+        #ЗАПУСТИТЬ ЕСЛИ КРАШНЕТСЯ!!!
+        top_players['с'] = pd.to_datetime(top_players['с'])
+        top_players['по'] = pd.to_datetime(top_players['по'])
         try:
             top_players['с'] = top_players['с'].dt.strftime('%d/%m/%y')
             top_players['по'] = top_players['по'].dt.strftime('%d/%m/%y')
         finally:
             print('Vse ok))')
-        '''
+
 
         df2 = [carrier.name, carrier.gosReg, self.dateEditFrom.date().toString('dd/MM/yy'),
                self.dateEditTo.date().toString('dd/MM/yy'), self.spinBoxSumm.text(),
@@ -524,7 +526,8 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
                      self.dateEditTo.date().toPyDate())
             self.loadFromBD = False
 
-        self.make_excel(self.bd[len(self.bd) - 1])
+        if not self.checkBoxPlusPrint.isChecked():
+            self.make_excel(self.bd[len(self.bd) - 1])
         self.auto_fill()
 
 

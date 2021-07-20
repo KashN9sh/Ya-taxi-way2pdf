@@ -100,6 +100,9 @@ class Ui_Dialog(object):
         self.gosNum = QtWidgets.QComboBox(Dialog)
         self.gosNum.setGeometry(QtCore.QRect(150, 30, 131, 26))
         self.gosNum.setObjectName("gosNum")
+        self.checkBoxPlusPrint = QtWidgets.QCheckBox(Dialog)
+        self.checkBoxPlusPrint.setGeometry(QtCore.QRect(310, 230, 141, 20))
+        self.checkBoxPlusPrint.setObjectName("checkBoxPlusPrint")
 
         self.retranslateUi(Dialog)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
@@ -121,3 +124,4 @@ class Ui_Dialog(object):
         self.labelPhoneOfVodila.setText(_translate("Dialog", "Телефон водилы"))
         self.checkBoxQR.setText(_translate("Dialog", "Карточка водилы"))
         self.checkBoxNalichka.setText(_translate("Dialog", "Наличка"))
+        self.checkBoxPlusPrint.setText(_translate("Dialog", "Допечатать"))

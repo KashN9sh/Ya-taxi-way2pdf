@@ -308,6 +308,19 @@
     </rect>
    </property>
   </widget>
+  <widget class="QCheckBox" name="checkBoxPlusPrint">
+   <property name="geometry">
+    <rect>
+     <x>310</x>
+     <y>230</y>
+     <width>141</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Допечатать</string>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>
