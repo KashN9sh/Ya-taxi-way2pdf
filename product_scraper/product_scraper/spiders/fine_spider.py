@@ -5,6 +5,7 @@ import requests
 from uuid import uuid4
 import datetime
 import pandas as pd
+import itertools
 
 #URL_AUTH = 'https://fleet-api.taxi.yandex.net/v2/parks/driver-profiles/transactions'
 
@@ -177,7 +178,11 @@ def check_orders(fines_array, shtrul):
 def print_fines_array(fines_array, bd, carriers):
     f = open("decrees.txt", "a")
     flag = True
-    data_for_excel  = pd.DataFrame()#columns=carriers
+    #data_for_excel  = pd.DataFrame(columns=carriers)
+    decrees =[]
+    for _ in range(len(carriers)):
+        decrees.append([])
+
     for i in range(len(fines_array[0])):
         for decree in bd:
             if decree == fines_array[0][i].decree + '\n':
@@ -197,9 +202,26 @@ def print_fines_array(fines_array, bd, carriers):
             f.write('\n')
             f.write(fines_array[0][i].decree)
 
-            data_for_excel = data_for_excel.append({str(fines_array[1][i]['name']):fines_array[0][i].decree}, ignore_index=True)
+            for j in range(len(carriers)):
+                if carriers[j] == fines_array[1][i]['name']:
+                    break
+            decrees[j].append(fines_array[0][i].decree)
         print('#################')
-    print(data_for_excel.head())
+
+    '''length = 0
+    for j in range(len(decrees)):
+        if len(decrees[j]) > length:
+            length = len(decrees[j])
+
+    for j in range(len(decrees)):
+        if len(decrees[j]) < length:
+            for _ in range(length - len(decrees[j])):
+                decrees[j].append('')
+'''
+    list(map(list, itertools.zip_longest(*decrees, fillvalue=None)))
+
+    data_for_excel = pd.DataFrame(data = decrees, columns = carriers)
+    print(data_for_excel)
 
 
 def get_decrees_from_bd():
