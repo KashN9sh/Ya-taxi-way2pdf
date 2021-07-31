@@ -4,12 +4,17 @@ from selenium.common.exceptions import NoSuchElementException
 import requests
 from uuid import uuid4
 import datetime
+import pandas as pd
 
 #URL_AUTH = 'https://fleet-api.taxi.yandex.net/v2/parks/driver-profiles/transactions'
 
 dateFormatter = "%d.%m.%Y %H:%M"
 hours = 1
 hours_added = datetime.timedelta(hours = hours)
+
+data_for_excel : pd.DataFrame
+writer = pd.ExcelWriter('fines.xlsx', engine='xlsxwriter')
+
 '''headers = {
     # 'Accept-Language':'ru',
     'X-Client-ID': 'taxi/park/e96b6ddf4309416ba66bc8f801bc847f',
@@ -108,12 +113,10 @@ def parse_info(gos_reg, region, registration):
 
     for i in range(fines_count):
         date_str = driver.find_elements_by_xpath("//div[@class='checkResult']/"
-                                                 "ul[@class='finesItem']/li/span[@class='field fine-datedecis']")[
-            i].text
+                                                 "ul[@class='finesItem']/li/span[@class='field fine-datedecis']")[i].text
 
         decree_str = driver.find_elements_by_xpath("//div[@class='checkResult']/"
-                                                   "ul[@class='finesItem']/li/span[@class='field fine-datepost']")[
-            i].text
+                                                   "ul[@class='finesItem']/li/span[@class='field fine-datepost']")[i].text
         cost_str = driver.find_elements_by_xpath("//div[@class='checkResult']/"
                                                  "ul[@class='finesItem']/li/span[@class='field fine-summa']")[i].text
 
@@ -163,17 +166,18 @@ def check_orders(fines_array, shtrul):
                 fines.append(fines_array[i])
                 shtruls.append(response.json()['orders'][0]['driver_profile'])
                 #print(fines_array[i].decree)
-            print(response.status_code)
-            print(response.json())
+            #print(response.status_code)
+            #print(response.json())
             time.sleep(0.5)
     final_fines_array.append(fines)
     final_fines_array.append(shtruls)
     return final_fines_array
 
 
-def print_fines_array(fines_array, bd):
+def print_fines_array(fines_array, bd, carriers):
     f = open("decrees.txt", "a")
     flag = True
+    data_for_excel  = pd.DataFrame()#columns=carriers
     for i in range(len(fines_array[0])):
         for decree in bd:
             if decree == fines_array[0][i].decree + '\n':
@@ -192,7 +196,10 @@ def print_fines_array(fines_array, bd):
             print('---------------------')
             f.write('\n')
             f.write(fines_array[0][i].decree)
+
+            data_for_excel = data_for_excel.append({str(fines_array[1][i]['name']):fines_array[0][i].decree}, ignore_index=True)
         print('#################')
+    print(data_for_excel.head())
 
 
 def get_decrees_from_bd():
@@ -213,5 +220,21 @@ final_fines_array = []
 for i in range(len(shtruls)):
     first_fines_array.append(parse_info(shtruls[i].car_number, shtruls[i].region, shtruls[i].sts))
     final_fines_array.append(check_orders(first_fines_array[i], shtruls[i]))
-    print_fines_array(final_fines_array[i], decrees_in_bd)
+
+    names =[]
+    for carrier in final_fines_array[i][1]:
+        print(carrier['name'])
+        flag = True
+
+        if len(names) == 0:
+            names.append(carrier['name'])
+
+        for name in names:
+            if name == carrier['name']:
+                flag = False
+
+        if flag: names.append(carrier['name'])
+    print(names)
+
+    print_fines_array(final_fines_array[i], decrees_in_bd, names)
 # parse_info('У468ВХ', '797', '9931918970')
