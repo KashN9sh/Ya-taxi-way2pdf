@@ -13,9 +13,6 @@ dateFormatter = "%d.%m.%Y %H:%M"
 hours = 1
 hours_added = datetime.timedelta(hours = hours)
 
-data_for_excel : pd.DataFrame
-writer = pd.ExcelWriter('fines.xlsx', engine='xlsxwriter')
-
 '''headers = {
     # 'Accept-Language':'ru',
     'X-Client-ID': 'taxi/park/e96b6ddf4309416ba66bc8f801bc847f',
@@ -199,7 +196,7 @@ def print_fines_array(fines_array, bd, carriers, car_number):
             for j in range(len(carriers)):
                 if carriers[j] == fines_array[1][i]['name']:
                     break
-            decrees[j].append(fines_array[0][i].decree)
+            decrees[j].append(fines_array[0][i].decree + ' ' + fines_array[0][i].cost)
         print('#################')
 
     decrees = list(map(list, itertools.zip_longest(*decrees, fillvalue=None)))
@@ -207,21 +204,18 @@ def print_fines_array(fines_array, bd, carriers, car_number):
     data_for_excel = pd.DataFrame(data = decrees, columns = carriers)
     print(data_for_excel)
 
-    #writer = pd.ExcelWriter(f'{car_number}.xlsx', engine='xlsxwriter')
-    data_for_excel.to_excel(f'{car_number}.xlsx', index=False,
+    writer = pd.ExcelWriter(f'{car_number}.xlsx')
+
+    data_for_excel.to_excel(writer, index=False,
                             sheet_name=datetime.datetime.now().date().strftime("%d.%m.%Y"))
-'''
-    worksheet = writer.sheets[datetime.datetime.now().date().strftime("%d.%m.%Y")]
 
-    for col in range(len(data_for_excel.columns)):
-        series = data_for_excel.loc[:, data_for_excel.columns[col]]
-        maxLen = 0
+    # Auto-adjust columns' width
+    for column in data_for_excel:
+        column_width = max(data_for_excel[column].astype(str).map(len).max(), len(column))
+        col_idx = data_for_excel.columns.get_loc(column)
+        writer.sheets[datetime.datetime.now().date().strftime("%d.%m.%Y")].set_column(col_idx, col_idx, column_width)
 
-        for idx in range(len(decrees[0])):
-            if len(str(series[idx])) > maxLen:
-                maxLen = idx
-
-        worksheet.set_column(col, idx, maxLen)'''
+    writer.save()
 
 
 def get_decrees_from_bd():
