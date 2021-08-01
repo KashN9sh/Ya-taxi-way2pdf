@@ -23,7 +23,6 @@ writer = pd.ExcelWriter('fines.xlsx', engine='xlsxwriter')
     'X-Idempotency-Token': str(uuid4())
 }'''
 
-
 class Fine:
     date: str
     time: str
@@ -35,7 +34,6 @@ class Fine:
         self.time = time
         self.decree = decree
         self.cost = cost
-
 
 class Shtrul:
     car_number: str
@@ -50,7 +48,6 @@ class Shtrul:
         self.sts = sts
         self.driver_id = driver_id
         self.car_id = car_id
-
 
 def get_shtruls_from_api():
     url_auth = 'https://fleet-api.taxi.yandex.net/v1/parks/driver-profiles/list'
@@ -82,7 +79,6 @@ def get_shtruls_from_api():
         shtrul_array.append(Shtrul(car_number, region, sts, driver_id, car_id))
 
     return shtrul_array
-
 
 def parse_info(gos_reg, region, registration):
     fines_array = []
@@ -126,7 +122,6 @@ def parse_info(gos_reg, region, registration):
     driver.close()
 
     return fines_array
-
 
 def check_orders(fines_array, shtrul):
     final_fines_array = []
@@ -174,12 +169,11 @@ def check_orders(fines_array, shtrul):
     final_fines_array.append(shtruls)
     return final_fines_array
 
-
-def print_fines_array(fines_array, bd, carriers):
+def print_fines_array(fines_array, bd, carriers, car_number):
     f = open("decrees.txt", "a")
     flag = True
-    #data_for_excel  = pd.DataFrame(columns=carriers)
     decrees =[]
+
     for _ in range(len(carriers)):
         decrees.append([])
 
@@ -208,20 +202,26 @@ def print_fines_array(fines_array, bd, carriers):
             decrees[j].append(fines_array[0][i].decree)
         print('#################')
 
-    '''length = 0
-    for j in range(len(decrees)):
-        if len(decrees[j]) > length:
-            length = len(decrees[j])
-
-    for j in range(len(decrees)):
-        if len(decrees[j]) < length:
-            for _ in range(length - len(decrees[j])):
-                decrees[j].append('')
-'''
-    list(map(list, itertools.zip_longest(*decrees, fillvalue=None)))
+    decrees = list(map(list, itertools.zip_longest(*decrees, fillvalue=None)))
 
     data_for_excel = pd.DataFrame(data = decrees, columns = carriers)
     print(data_for_excel)
+
+    #writer = pd.ExcelWriter(f'{car_number}.xlsx', engine='xlsxwriter')
+    data_for_excel.to_excel(f'{car_number}.xlsx', index=False,
+                            sheet_name=datetime.datetime.now().date().strftime("%d.%m.%Y"))
+'''
+    worksheet = writer.sheets[datetime.datetime.now().date().strftime("%d.%m.%Y")]
+
+    for col in range(len(data_for_excel.columns)):
+        series = data_for_excel.loc[:, data_for_excel.columns[col]]
+        maxLen = 0
+
+        for idx in range(len(decrees[0])):
+            if len(str(series[idx])) > maxLen:
+                maxLen = idx
+
+        worksheet.set_column(col, idx, maxLen)'''
 
 
 def get_decrees_from_bd():
@@ -231,7 +231,6 @@ def get_decrees_from_bd():
         decrees.append(line)
     f.close()
     return decrees
-
 
 # def fines_pay(shtrul, fines_array):
 
@@ -258,5 +257,5 @@ for i in range(len(shtruls)):
         if flag: names.append(carrier['name'])
     print(names)
 
-    print_fines_array(final_fines_array[i], decrees_in_bd, names)
+    print_fines_array(final_fines_array[i], decrees_in_bd, names, shtruls[i].car_number)
 # parse_info('У468ВХ', '797', '9931918970')
