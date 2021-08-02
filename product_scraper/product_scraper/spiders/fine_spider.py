@@ -7,18 +7,9 @@ import datetime
 import pandas as pd
 import itertools
 
-#URL_AUTH = 'https://fleet-api.taxi.yandex.net/v2/parks/driver-profiles/transactions'
-
 dateFormatter = "%d.%m.%Y %H:%M"
 hours = 1
 hours_added = datetime.timedelta(hours = hours)
-
-'''headers = {
-    # 'Accept-Language':'ru',
-    'X-Client-ID': 'taxi/park/e96b6ddf4309416ba66bc8f801bc847f',
-    'X-API-Key': 'zohhKIuBMdIpJTEiKzrePMQIUuHXDyNFgRrSf',
-    'X-Idempotency-Token': str(uuid4())
-}'''
 
 class Fine:
     date: str
@@ -94,6 +85,7 @@ def parse_info(gos_reg, region, registration):
     driver.get(fines_url)
 
     button = driver.find_element_by_xpath("//a[@class='checker']")
+    time.sleep(1)
     button.click()
 
     time.sleep(25)
@@ -170,6 +162,7 @@ def print_fines_array(fines_array, bd, carriers, car_number):
     f = open("decrees.txt", "a")
     flag = True
     decrees =[]
+    URL_AUTH = 'https://fleet-api.taxi.yandex.net/v2/parks/driver-profiles/transactions'
 
     for _ in range(len(carriers)):
         decrees.append([])
@@ -182,14 +175,23 @@ def print_fines_array(fines_array, bd, carriers, car_number):
 
         if flag:
             print(i + 1)
+            headers = {
+                # 'Accept-Language':'ru',
+                'X-Client-ID': 'taxi/park/e96b6ddf4309416ba66bc8f801bc847f',
+                'X-API-Key': 'zohhKIuBMdIpJTEiKzrePMQIUuHXDyNFgRrSf',
+                'X-Idempotency-Token': str(uuid4())
+            }
+
             data = {"amount": '-' + fines_array[0][i].cost,
                     "category_id": 'partner_service_manual',
                     "description": f'списание средств для оплаты штрафа постановление № "{fines_array[0][i].decree}"',
                     "driver_profile_id": fines_array[1][i]['id'],
                     "park_id": "e96b6ddf4309416ba66bc8f801bc847f"}
-            print(data['description'])
-            print(fines_array[1][i]['name'])
-            print('---------------------')
+
+            response = requests.post(URL_AUTH, headers=headers, json=data)
+            print(response.status_code)
+            print(response.json())
+
             f.write('\n')
             f.write(fines_array[0][i].decree)
 
@@ -197,25 +199,23 @@ def print_fines_array(fines_array, bd, carriers, car_number):
                 if carriers[j] == fines_array[1][i]['name']:
                     break
             decrees[j].append(fines_array[0][i].decree + ' ' + fines_array[0][i].cost)
-        print('#################')
+    if len(fines_array[0]) != 0:
+        decrees = list(map(list, itertools.zip_longest(*decrees, fillvalue=None)))
 
-    decrees = list(map(list, itertools.zip_longest(*decrees, fillvalue=None)))
+        data_for_excel = pd.DataFrame(data = decrees, columns = carriers)
 
-    data_for_excel = pd.DataFrame(data = decrees, columns = carriers)
-    print(data_for_excel)
+        writer = pd.ExcelWriter(f'{car_number}.xlsx')
 
-    writer = pd.ExcelWriter(f'{car_number}.xlsx')
+        data_for_excel.to_excel(writer, index=False,
+                                sheet_name=datetime.datetime.now().date().strftime("%d.%m.%Y"))
 
-    data_for_excel.to_excel(writer, index=False,
-                            sheet_name=datetime.datetime.now().date().strftime("%d.%m.%Y"))
+        # Auto-adjust columns' width
+        for column in data_for_excel:
+            column_width = max(data_for_excel[column].astype(str).map(len).max(), len(column))
+            col_idx = data_for_excel.columns.get_loc(column)
+            writer.sheets[datetime.datetime.now().date().strftime("%d.%m.%Y")].set_column(col_idx, col_idx, column_width)
 
-    # Auto-adjust columns' width
-    for column in data_for_excel:
-        column_width = max(data_for_excel[column].astype(str).map(len).max(), len(column))
-        col_idx = data_for_excel.columns.get_loc(column)
-        writer.sheets[datetime.datetime.now().date().strftime("%d.%m.%Y")].set_column(col_idx, col_idx, column_width)
-
-    writer.save()
+        writer.save()
 
 
 def get_decrees_from_bd():
@@ -238,7 +238,6 @@ for i in range(len(shtruls)):
 
     names =[]
     for carrier in final_fines_array[i][1]:
-        print(carrier['name'])
         flag = True
 
         if len(names) == 0:
@@ -249,7 +248,6 @@ for i in range(len(shtruls)):
                 flag = False
 
         if flag: names.append(carrier['name'])
-    print(names)
 
     print_fines_array(final_fines_array[i], decrees_in_bd, names, shtruls[i].car_number)
 # parse_info('У468ВХ', '797', '9931918970')
