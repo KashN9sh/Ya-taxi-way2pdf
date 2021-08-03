@@ -174,6 +174,7 @@ def print_fines_array(fines_array, bd, carriers, car_number):
                 break
 
         if flag:
+            bd.append(fines_array[0][i].decree + '\n')
             print(i + 1)
             headers = {
                 # 'Accept-Language':'ru',
