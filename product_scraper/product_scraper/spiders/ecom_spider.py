@@ -37,6 +37,7 @@ class Carrier:
     garajeNumber = ''
     driverLicense = ''
     category = ''
+    phoneOfShtrul = ''
 
 
 def parse_info(gos_reg, qr):
@@ -340,6 +341,8 @@ def make_carrier_from_json(data):
     man.garajeNumber = data['garajeNumber']
     man.driverLicense = data['driverLicense']
     man.category = data['category']
+    if 'phoneOfShtrul' in data:
+        man.phoneOfShtrul = data['phoneOfShtrul']
 
     return man
 
@@ -358,7 +361,7 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
         self.gosNum.currentTextChanged.connect(self.auto_fill)
         self.name.textChanged.connect(self.auto_fill)
 
-        f = open("demofile2.txt", "r")
+        f = open("demofile.txt", "r")
         for line in f:
             self.bd.append(make_carrier_from_json(json.loads(line)))
 
@@ -453,6 +456,7 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
                     self.category.setText(carrier.category)
                     self.loadFromBD = True
                     self.carrierFromBDNum = i
+                    self.lineEditPhoneOfVodila.setText(carrier.phoneOfShtrul)
 
                 else:
                     self.loadFromBD = False
@@ -486,12 +490,13 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
             carrier_for_parse.garajeNumber = self.garajeNumber.text()
             carrier_for_parse.driverLicense = self.driverLicense.text()
             carrier_for_parse.category = self.category.text()
+            carrier_for_parse.phoneOfShtrul = self.lineEditPhoneOfVodila.text()
 
             self.bd.append(carrier_for_parse)
 
             json_str = json.dumps(carrier_for_parse.__dict__, ensure_ascii=False)
 
-            f = open("demofile2.txt", "a")
+            f = open("demofile.txt", "a")
             f.write('\n')
             f.write(json_str)
             f.close()
@@ -505,9 +510,22 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
             self.bd[self.carrierFromBDNum].garajeNumber = self.garajeNumber.text()
             self.bd[self.carrierFromBDNum].driverLicense = self.driverLicense.text()
             self.bd[self.carrierFromBDNum].category = self.category.text()
+            self.bd[self.carrierFromBDNum].phoneOfShtrul = self.lineEditPhoneOfVodila.text()
 
             json_str = json.dumps(self.bd[self.carrierFromBDNum].__dict__, ensure_ascii=False)
-            f = open("demofile2.txt", "a")
+
+            f = open("demofile.txt", "r+")
+            lines = f.readlines()
+            f.truncate(0)
+            f.close()
+
+            f = open("demofile.txt", "w")
+            f.truncate()
+
+            for line in lines:
+                if json.loads(line)['name'] != self.bd[self.carrierFromBDNum].name:
+                    f.write(line)
+
             f.write('\n')
             f.write(json_str)
             f.close()
@@ -522,6 +540,26 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
             self.bd[self.carrierFromBDNum].garajeNumber = self.garajeNumber.text()
             self.bd[self.carrierFromBDNum].driverLicense = self.driverLicense.text()
             self.bd[self.carrierFromBDNum].category = self.category.text()
+            self.bd[self.carrierFromBDNum].phoneOfShtrul = self.lineEditPhoneOfVodila.text()
+
+            json_str = json.dumps(self.bd[self.carrierFromBDNum].__dict__, ensure_ascii=False)
+
+            f = open("demofile.txt", "r+")
+            lines = f.readlines()
+            f.truncate(0)
+            f.close()
+
+            f = open("demofile.txt", "w")
+            f.truncate()
+
+            for line in lines:
+                if json.loads(line)['name'] != self.bd[self.carrierFromBDNum].name:
+                    f.write(line)
+
+            f.write('\n')
+            f.write(json_str)
+            f.close()
+
             make_pdf(self.bd[self.carrierFromBDNum], self.dateEditFrom.date().toPyDate(),
                      self.dateEditTo.date().toPyDate())
             self.loadFromBD = False
