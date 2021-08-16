@@ -185,8 +185,18 @@ def print_fines_array(fines_array, bd, carriers, car_number):
 
             data = {"amount": '-' + fines_array[0][i].cost,
                     "category_id": 'partner_service_manual',
-                    "description": f'списание средств для оплаты штрафа постановление № "{fines_array[0][i].decree}"',
+                    "description": f'списание средств для оплаты штрафа постановление № "{fines_array[0][i].decree}" от {fines_array[0][i].date}',
                     "driver_profile_id": fines_array[1][i]['id'],
+                    "park_id": "e96b6ddf4309416ba66bc8f801bc847f"}
+
+            response = requests.post(URL_AUTH, headers=headers, json=data)
+            print(response.status_code)
+            print(response.json())
+
+            data = {"amount": fines_array[0][i].cost,
+                    "category_id": 'partner_service_manual',
+                    "description": f'деньги для оплаты штрафа постановление № "{fines_array[0][i].decree}" от {fines_array[0][i].date}',
+                    "driver_profile_id": '023e46118ba74f1c92f2a7189af6c68b',
                     "park_id": "e96b6ddf4309416ba66bc8f801bc847f"}
 
             response = requests.post(URL_AUTH, headers=headers, json=data)
@@ -200,6 +210,7 @@ def print_fines_array(fines_array, bd, carriers, car_number):
                 if carriers[j] == fines_array[1][i]['name']:
                     break
             decrees[j].append(fines_array[0][i].decree + ' ' + fines_array[0][i].cost)
+
     if len(fines_array[0]) != 0:
         decrees = list(map(list, itertools.zip_longest(*decrees, fillvalue=None)))
 
@@ -251,4 +262,6 @@ for i in range(len(shtruls)):
         if flag: names.append(carrier['name'])
 
     print_fines_array(final_fines_array[i], decrees_in_bd, names, shtruls[i].car_number)
+
+
 # parse_info('У468ВХ', '797', '9931918970')
