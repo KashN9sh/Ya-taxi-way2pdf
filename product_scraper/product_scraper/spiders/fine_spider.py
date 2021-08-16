@@ -209,7 +209,7 @@ def print_fines_array(fines_array, bd, carriers, car_number):
             for j in range(len(carriers)):
                 if carriers[j] == fines_array[1][i]['name']:
                     break
-            decrees[j].append(fines_array[0][i].decree + ' ' + fines_array[0][i].cost)
+            decrees[j].append(fines_array[0][i].decree + ' ' + fines_array[0][i].cost + ' ' + fines_array[0][i].date)
 
     if len(fines_array[0]) != 0:
         decrees = list(map(list, itertools.zip_longest(*decrees, fillvalue=None)))
@@ -244,6 +244,9 @@ decrees_in_bd = get_decrees_from_bd()
 shtruls = get_shtruls_from_api()
 first_fines_array = []
 final_fines_array = []
+
+#все машины
+'''
 for i in range(len(shtruls)):
     first_fines_array.append(parse_info(shtruls[i].car_number, shtruls[i].region, shtruls[i].sts))
     final_fines_array.append(check_orders(first_fines_array[i], shtruls[i]))
@@ -262,6 +265,28 @@ for i in range(len(shtruls)):
         if flag: names.append(carrier['name'])
 
     print_fines_array(final_fines_array[i], decrees_in_bd, names, shtruls[i].car_number)
+'''
 
+#одна машина
+'''
+for i in range(len(shtruls)):
+    if shtruls[i].car_number == 'М586АМ':
+        first_fines_array.append(parse_info(shtruls[i].car_number, shtruls[i].region, shtruls[i].sts))
+        final_fines_array.append(check_orders(first_fines_array[0], shtruls[i]))
+
+        names =[]
+        for carrier in final_fines_array[0][1]:
+            flag = True
+
+            if len(names) == 0:
+                names.append(carrier['name'])
+
+            for name in names:
+                if name == carrier['name']:
+                    flag = False
+
+            if flag: names.append(carrier['name'])
+
+        print_fines_array(final_fines_array[0], decrees_in_bd, names, shtruls[i].car_number)'''
 
 # parse_info('У468ВХ', '797', '9931918970')
