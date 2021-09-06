@@ -6,6 +6,10 @@ from uuid import uuid4
 import datetime
 import pandas as pd
 import itertools
+from PyQt5 import QtWidgets, QtCore
+import fines
+import sys
+
 
 dateFormatter = "%d.%m.%Y %H:%M"
 hours = 1
@@ -64,7 +68,14 @@ def get_shtruls_from_api():
                 sts = ''
             driver_id = response.json()['driver_profiles'][i]['driver_profile']['id']
 
-        shtrul_array.append(Shtrul(car_number, region, sts, driver_id, car_id))
+        flag = True
+
+        for shtrul in shtrul_array:
+            if shtrul.car_number == car_number:
+                flag = False
+
+        if flag :
+            shtrul_array.append(Shtrul(car_number, region, sts, driver_id, car_id))
 
     return shtrul_array
 
@@ -240,11 +251,6 @@ def get_decrees_from_bd():
 
 # def fines_pay(shtrul, fines_array):
 
-decrees_in_bd = get_decrees_from_bd()
-shtruls = get_shtruls_from_api()
-first_fines_array = []
-final_fines_array = []
-
 #все машины
 '''
 for i in range(len(shtruls)):
@@ -288,5 +294,49 @@ for i in range(len(shtruls)):
             if flag: names.append(carrier['name'])
 
         print_fines_array(final_fines_array[0], decrees_in_bd, names, shtruls[i].car_number)'''
+
+
+class App(QtWidgets.QMainWindow, fines.Ui_MainWindow):
+    decrees_in_bd = []
+    shtruls = []
+
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+        self.BtnGetFines.clicked.connect(self.Work)
+        self.decrees_in_bd = get_decrees_from_bd()
+        self.shtruls = get_shtruls_from_api()
+
+        for shtrul in self.shtruls:
+            self.listWidget.addItem(shtrul.car_number)
+
+    def Work(self):
+        first_fines_array = []
+        final_fines_array = []
+
+        first_fines_array.append(parse_info(self.shtruls[self.listWidget.currentRow()].car_number,
+                                            self.shtruls[self.listWidget.currentRow()].region,
+                                            self.shtruls[self.listWidget.currentRow()].sts))
+        final_fines_array.append(check_orders(first_fines_array[0],
+                                              self.shtruls[self.listWidget.currentRow()]))
+        for i in range(len(final_fines_array[0][0])):
+            item = QtWidgets.QListWidgetItem()
+            item.setText(final_fines_array[0][1][i]['name'] + ' ' +
+                                      final_fines_array[0][0][i].decree + ' ' +
+                                      final_fines_array[0][0][i].cost)
+            item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
+            item.setCheckState(QtCore.Qt.Unchecked)
+            self.listWidget_2.addItem(item)
+
+
+def main():
+    app = QtWidgets.QApplication(sys.argv)
+    window = App()
+    window.show()
+    app.exec_()
+
+
+if __name__ == '__main__':
+    main()
 
 # parse_info('У468ВХ', '797', '9931918970')
