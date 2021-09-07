@@ -12,11 +12,20 @@ import sys
 import json
 from PyQt5 import QtWidgets
 import pandas as pd
+import shutil
 import MainWindow
+
+from selenium.common.exceptions import NoSuchElementException        
+def check_exists_by_xpath(xpath):
+    try:
+        webdriver.find_element_by_xpath(xpath)
+    except NoSuchElementException:
+        return False
+    return True
 
 
 class Carrier:
-    status = ''
+    status = 'Признано недействующим'
     date = ''
     regNum = ''
     carrier = ''
@@ -57,18 +66,19 @@ def parse_info(gos_reg, qr):
         driver.get(mtdi_url)
         item = Carrier()
 
-        item.status = ''
         j = 0
 
-        while item.status != 'Действующее':
+        count = len(driver.find_elements_by_xpath("//a[@class='js-popup-open']")) 
+        print(item.status)
+        while item.status == 'Признано недействующим':
             button = driver.find_elements_by_xpath("//a[@class='js-popup-open']")[j]
             button.click()
 
             arr = []
             for i in range(1, 15):
                 table = driver.find_element_by_xpath(
-                    f"//div[@id='taxi-info']/div[@class='typical']/"
-                    f"div[@class='table-responsive']/table/tbody/tr[{i}]/td[2]").text
+                    f"//div[@id='taxi-info']/div[@class='typical']/div[@class='table-responsive']/table/tbody/tr[{i}]/td[2]").text
+                print(table)
                 arr.append(table)
 
             if arr[3][0] == 'О':
@@ -90,6 +100,7 @@ def parse_info(gos_reg, qr):
                 arr[11] = newstr
 
             item.status = arr[0]
+            print(item.status)
             item.date = arr[1]
             item.regNum = arr[2]
             item.carrier = arr[3]
@@ -100,9 +111,13 @@ def parse_info(gos_reg, qr):
             item.gosReg = arr[8]
             item.yearOfCreate = arr[9]
             item.NumberOfResolution = arr[10]
+            if item.NumberOfResolution[2] == 'К':
+                item.NumberOfResolution = 'МСК'
             item.CompeteUL = arr[11]
             item.DateOfCompete = arr[12].replace(' ', '').replace('\n', ' ')
             item.Region = arr[13]
+
+            print(item.gosReg)
 
             button = driver.find_element_by_xpath("//button[@class='mfp-close']")
             button.click()
@@ -113,7 +128,7 @@ def parse_info(gos_reg, qr):
 
         time.sleep(3)
 
-        if qr:
+        if qr and check_exists_by_xpath("//img[@alt='QR']"):
             button = driver.find_element_by_xpath("//img[@alt='QR']")
             button.click()
 
@@ -219,6 +234,7 @@ def make_pdf(carrier, date_from, date_to):
 
         canvas.drawString(10 * mm, 142 * mm, 'Водитель:')
         try:
+            carrier.name = carrier.name.replace('.', ' ')
             canvas.drawString(24 * mm, 142 * mm, carrier.name.split()[0] + '.' + carrier.name.split()[1][0] + '.' +
                               carrier.name.split()[2][0])
         except:
@@ -231,6 +247,8 @@ def make_pdf(carrier, date_from, date_to):
 
         canvas.drawString(10 * mm, 156 * mm, 'Марка и модель автомобиля: ')
         canvas.drawString(49 * mm, 156 * mm, carrier.markAuto + ' ' + carrier.modelAuto)
+
+        canvas.setFont('FreeSans', 6)
 
         canvas.drawString(10 * mm, 159 * mm, 'Организация: ')
         canvas.drawString(29 * mm, 159 * mm, carrier.CompeteUL)
@@ -252,6 +270,8 @@ def make_pdf(carrier, date_from, date_to):
 
         canvas.drawString(113 * mm, 200 * mm, 'ОКПО: ')
         canvas.drawString(124 * mm, 200 * mm, carrier.OKPO)
+
+        canvas.setFont('FreeSans', 8)
 
         canvas.drawString(63 * mm, 175 * mm, date_to_str(date))
 
@@ -403,7 +423,7 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
                self.dateEditTo.date().toString('dd/MM/yy'), self.spinBoxSumm.text(),
                str(self.checkBoxNalichka.isChecked()), self.lineEditPhoneOfVodila.text(),
                str(self.checkBoxQR.isChecked())]
-
+        '''
         for name in top_players['Ф.И.О водителя']:
             if name == carrier.name:
                 key = True
@@ -421,8 +441,9 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
             top_players['КАРТОЧКА ВОДИТЕЛЯ'][id] = str(self.checkBoxQR.isChecked())
 
         else:
-            a_series = pd.Series(df2, index=top_players.columns)
-            top_players = top_players.append(a_series, ignore_index=True)
+        '''
+        a_series = pd.Series(df2, index=top_players.columns)
+        top_players = top_players.append(a_series, ignore_index=True)
 
         writer = pd.ExcelWriter('listBase.xlsx', engine='xlsxwriter', date_format='dd/mm/yy')
         top_players.to_excel(writer, index=False)
@@ -478,6 +499,7 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
         return flag
 
     def work(self):
+        shutil.copyfile("demofile.txt", "demofileReserve.txt")
         print(self.loadFromBD)
         print(self.check_gosnum())
 
@@ -492,6 +514,8 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
             carrier_for_parse.category = self.category.text()
             carrier_for_parse.phoneOfShtrul = self.lineEditPhoneOfVodila.text()
 
+            print(carrier_for_parse.gosReg);
+            
             self.bd.append(carrier_for_parse)
 
             json_str = json.dumps(carrier_for_parse.__dict__, ensure_ascii=False)
@@ -503,7 +527,7 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
 
             make_pdf(self.bd[len(self.bd) - 1], self.dateEditFrom.date().toPyDate(), self.dateEditTo.date().toPyDate())
 
-        if not self.loadFromBD and self.check_gosnum():
+        elif not self.loadFromBD and self.check_gosnum():
             self.bd[self.carrierFromBDNum].name = self.name.text()
             self.bd[self.carrierFromBDNum].address = self.addres.text()
             self.bd[self.carrierFromBDNum].phoneNumber = self.phoneNumber.text()
@@ -514,17 +538,7 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
 
             json_str = json.dumps(self.bd[self.carrierFromBDNum].__dict__, ensure_ascii=False)
 
-            f = open("demofile.txt", "r+")
-            lines = f.readlines()
-            f.truncate(0)
-            f.close()
-
-            f = open("demofile.txt", "w")
-            f.truncate()
-
-            for line in lines:
-                if json.loads(line)['name'] != self.bd[self.carrierFromBDNum].name:
-                    f.write(line)
+            f = open("demofile.txt", "a")
 
             f.write('\n')
             f.write(json_str)
@@ -544,17 +558,7 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
 
             json_str = json.dumps(self.bd[self.carrierFromBDNum].__dict__, ensure_ascii=False)
 
-            f = open("demofile.txt", "r+")
-            lines = f.readlines()
-            f.truncate(0)
-            f.close()
-
-            f = open("demofile.txt", "w")
-            f.truncate()
-
-            for line in lines:
-                if json.loads(line)['name'] != self.bd[self.carrierFromBDNum].name:
-                    f.write(line)
+            f = open("demofile.txt", "a")
 
             f.write('\n')
             f.write(json_str)
