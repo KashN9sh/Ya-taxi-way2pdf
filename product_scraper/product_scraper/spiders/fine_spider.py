@@ -169,7 +169,7 @@ def check_orders(fines_array, shtrul):
     final_fines_array.append(shtruls)
     return final_fines_array
 
-def print_fines_array(fines_array, bd, carriers, car_number):
+'''def print_fines_array(fines_array, bd, carriers, car_number):
     f = open("decrees.txt", "a")
     flag = True
     decrees =[]
@@ -238,7 +238,7 @@ def print_fines_array(fines_array, bd, carriers, car_number):
             col_idx = data_for_excel.columns.get_loc(column)
             writer.sheets[datetime.datetime.now().date().strftime("%d.%m.%Y")].set_column(col_idx, col_idx, column_width)
 
-        writer.save()
+        writer.save()'''
 
 
 def get_decrees_from_bd():
@@ -299,34 +299,136 @@ for i in range(len(shtruls)):
 class App(QtWidgets.QMainWindow, fines.Ui_MainWindow):
     decrees_in_bd = []
     shtruls = []
+    first_fines_array = []
+    final_fines_array = []
+    car_number = ''
 
     def __init__(self):
         super().__init__()
         self.setupUi(self)
-        self.BtnGetFines.clicked.connect(self.Work)
+        self.BtnGetFines.clicked.connect(self.Work1)
+        self.BtgEbatShtrule1.clicked.connect(self.Work2)
         self.decrees_in_bd = get_decrees_from_bd()
         self.shtruls = get_shtruls_from_api()
 
         for shtrul in self.shtruls:
             self.listWidget.addItem(shtrul.car_number)
 
-    def Work(self):
-        first_fines_array = []
-        final_fines_array = []
+    def print_fines_array(self,fines_array, bd, carriers, car_number):
+        f = open("decrees.txt", "a")
+        decrees = []
+        URL_AUTH = 'https://fleet-api.taxi.yandex.net/v2/parks/driver-profiles/transactions'
 
-        first_fines_array.append(parse_info(self.shtruls[self.listWidget.currentRow()].car_number,
+        for _ in range(len(carriers)):
+            decrees.append([])
+
+        for i in range(len(fines_array[0])):
+            flag = True
+
+            if not self.listWidget_2.item(i).checkState():
+                flag = False
+                break
+
+            for decree in bd:
+                if decree == fines_array[0][i].decree + '\n' or decree == fines_array[0][i].decree:
+                    flag = False
+                    self.listWidget1.addItem(f'средства по постановлению "{fines_array[0][i].decree}" от {fines_array[0][i].date} уже списаны')
+
+            if flag:
+                bd.append(fines_array[0][i].decree + '\n')
+                print(i + 1)
+                headers = {
+                    # 'Accept-Language':'ru',
+                    'X-Client-ID': 'taxi/park/e96b6ddf4309416ba66bc8f801bc847f',
+                    'X-API-Key': 'zohhKIuBMdIpJTEiKzrePMQIUuHXDyNFgRrSf',
+                    'X-Idempotency-Token': str(uuid4())
+                }
+
+                data = {"amount": '-' + fines_array[0][i].cost,
+                        "category_id": 'partner_service_manual',
+                        "description": f'списание средств для оплаты штрафа постановление № "{fines_array[0][i].decree}" от {fines_array[0][i].date}',
+                        "driver_profile_id": fines_array[1][i]['id'],
+                        "park_id": "e96b6ddf4309416ba66bc8f801bc847f"}
+
+                response = requests.post(URL_AUTH, headers=headers, json=data)
+                print(response.status_code)
+                print(response.json())
+                self.listWidget1.addItem(f'списание средств для оплаты штрафа постановление № "{fines_array[0][i].decree}" от {fines_array[0][i].date} {fines_array[1][i]["name"]} ')
+
+                data = {"amount": fines_array[0][i].cost,
+                        "category_id": 'partner_service_manual',
+                        "description": f'деньги для оплаты штрафа постановление № "{fines_array[0][i].decree}" от {fines_array[0][i].date} {fines_array[1][i]["name"]} ',
+                        "driver_profile_id": '023e46118ba74f1c92f2a7189af6c68b',
+                        "park_id": "e96b6ddf4309416ba66bc8f801bc847f"}
+
+                response = requests.post(URL_AUTH, headers=headers, json=data)
+                print(response.status_code)
+                print(response.json())
+
+
+                f.write('\n')
+                f.write(fines_array[0][i].decree)
+
+                for j in range(len(carriers)):
+                    if carriers[j] == fines_array[1][i]['name']:
+                        break
+                decrees[j].append(
+                    fines_array[0][i].decree + ' ' + fines_array[0][i].cost + ' ' + fines_array[0][i].date)
+
+        if len(fines_array[0]) != 0:
+            decrees = list(map(list, itertools.zip_longest(*decrees, fillvalue=None)))
+
+            data_for_excel = pd.DataFrame(data=decrees, columns=carriers)
+
+            writer = pd.ExcelWriter(f'{car_number}.xlsx')
+
+            data_for_excel.to_excel(writer, index=False,
+                                    sheet_name=datetime.datetime.now().date().strftime("%d.%m.%Y"))
+
+            # Auto-adjust columns' width
+            for column in data_for_excel:
+                column_width = max(data_for_excel[column].astype(str).map(len).max(), len(column))
+                col_idx = data_for_excel.columns.get_loc(column)
+                writer.sheets[datetime.datetime.now().date().strftime("%d.%m.%Y")].set_column(col_idx, col_idx,
+                                                                                              column_width)
+
+            writer.save()
+
+    def Work1(self):
+        self.car_number = self.shtruls[self.listWidget.currentRow()].car_number
+
+        self.first_fines_array.append(parse_info(self.shtruls[self.listWidget.currentRow()].car_number,
                                             self.shtruls[self.listWidget.currentRow()].region,
                                             self.shtruls[self.listWidget.currentRow()].sts))
-        final_fines_array.append(check_orders(first_fines_array[0],
+        self.final_fines_array.append(check_orders(self.first_fines_array[0],
                                               self.shtruls[self.listWidget.currentRow()]))
-        for i in range(len(final_fines_array[0][0])):
+        for i in range(len(self.final_fines_array[0][0])):
             item = QtWidgets.QListWidgetItem()
-            item.setText(final_fines_array[0][1][i]['name'] + ' ' +
-                                      final_fines_array[0][0][i].decree + ' ' +
-                                      final_fines_array[0][0][i].cost)
+            item.setText(self.final_fines_array[0][1][i]['name'] + ' ' +
+                                      self.final_fines_array[0][0][i].decree + ' ' +
+                                      self.final_fines_array[0][0][i].cost)
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
             item.setCheckState(QtCore.Qt.Unchecked)
             self.listWidget_2.addItem(item)
+
+    def Work2(self):
+        names = []
+        for carrier in self.final_fines_array[0][1]:
+            flag = True
+
+            if len(names) == 0:
+                names.append(carrier['name'])
+
+            for name in names:
+                if name == carrier['name']:
+                    flag = False
+
+            if flag: names.append(carrier['name'])
+
+        self.print_fines_array(self.final_fines_array[0], self.decrees_in_bd, names, self.car_number)
+
+
+
 
 
 def main():
