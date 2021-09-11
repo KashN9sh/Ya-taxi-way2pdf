@@ -395,6 +395,12 @@ class App(QtWidgets.QMainWindow, fines.Ui_MainWindow):
             writer.save()
 
     def Work1(self):
+        self.first_fines_array.clear()
+        self.final_fines_array.clear()
+
+        for i in range(self.listWidget_2.count()):
+         self.listWidget_2.takeItem(self.listWidget_2.row(self.listWidget_2.item(0)))
+
         self.car_number = self.shtruls[self.listWidget.currentRow()].car_number
 
         self.first_fines_array.append(parse_info(self.shtruls[self.listWidget.currentRow()].car_number,
@@ -402,6 +408,7 @@ class App(QtWidgets.QMainWindow, fines.Ui_MainWindow):
                                             self.shtruls[self.listWidget.currentRow()].sts))
         self.final_fines_array.append(check_orders(self.first_fines_array[0],
                                               self.shtruls[self.listWidget.currentRow()]))
+
         for i in range(len(self.final_fines_array[0][0])):
             item = QtWidgets.QListWidgetItem()
             item.setText(self.final_fines_array[0][1][i]['name'] + ' ' +
