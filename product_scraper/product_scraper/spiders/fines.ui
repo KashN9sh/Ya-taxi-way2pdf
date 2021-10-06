@@ -66,7 +66,7 @@
      <string>Списать штрафы</string>
     </property>
    </widget>
-   <widget class="QListWidget" name="listWidget">
+   <widget class="QListWidget" name="listWidget1">
     <property name="geometry">
      <rect>
       <x>20</x>

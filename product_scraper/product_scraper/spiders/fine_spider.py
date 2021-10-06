@@ -1,3 +1,4 @@
+import random
 import time
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
@@ -9,6 +10,7 @@ import itertools
 from PyQt5 import QtWidgets, QtCore
 import fines
 import sys
+import xlsxwriter
 
 
 dateFormatter = "%d.%m.%Y %H:%M"
@@ -327,10 +329,9 @@ class App(QtWidgets.QMainWindow, fines.Ui_MainWindow):
 
             if not self.listWidget_2.item(i).checkState():
                 flag = False
-                break
 
             for decree in bd:
-                if decree == fines_array[0][i].decree + '\n' or decree == fines_array[0][i].decree:
+                if (decree == fines_array[0][i].decree + '\n' or decree == fines_array[0][i].decree) and (self.listWidget_2.item(i).checkState()):
                     flag = False
                     self.listWidget1.addItem(f'средства по постановлению "{fines_array[0][i].decree}" от {fines_array[0][i].date} уже списаны')
 
@@ -380,16 +381,20 @@ class App(QtWidgets.QMainWindow, fines.Ui_MainWindow):
 
             data_for_excel = pd.DataFrame(data=decrees, columns=carriers)
 
+            workbook = xlsxwriter.Workbook(f'{car_number}.xlsx')
+            a = str(random.randint(0,1000))
+            worksheet = workbook.add_worksheet(datetime.datetime.now().date().strftime("%d.%m.%Y ")+ a)
+
             writer = pd.ExcelWriter(f'{car_number}.xlsx')
 
             data_for_excel.to_excel(writer, index=False,
-                                    sheet_name=datetime.datetime.now().date().strftime("%d.%m.%Y"))
+                                    sheet_name=datetime.datetime.now().date().strftime("%d.%m.%Y ")+ a)
 
             # Auto-adjust columns' width
             for column in data_for_excel:
                 column_width = max(data_for_excel[column].astype(str).map(len).max(), len(column))
                 col_idx = data_for_excel.columns.get_loc(column)
-                writer.sheets[datetime.datetime.now().date().strftime("%d.%m.%Y")].set_column(col_idx, col_idx,
+                writer.sheets[datetime.datetime.now().date().strftime("%d.%m.%Y ") + a].set_column(col_idx, col_idx,
                                                                                               column_width)
 
             writer.save()
