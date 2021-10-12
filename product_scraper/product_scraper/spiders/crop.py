@@ -42,6 +42,8 @@ contours, hierarchy = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_S
 y1 = 0
 letter = []
 j = 0
+w0 = 0
+
 for idx, contour in enumerate(contours):
     (x, y, w, h) = cv2.boundingRect(contour)
     # print("R", idx, x, y, w, h, cv2.contourArea(contour), hierarchy[0][idx])
@@ -64,7 +66,7 @@ for idx, contour in enumerate(contours):
 
             #cv2.rectangle(binary, (x - 5, y - 5), (x + w + 5, y + h + 5), (70, 0, 0), 1)
             letter_crop = binary[int(y - 5) : int(y + h + 5), int(x - 5) : int(x + w + 5)]
-            size_max = max(w, h)
+            w0 = w
             #letter_square = 255 * np.ones(shape=[size_max, size_max], dtype=np.uint8)
             if j == 1:
                 letter.append((x, y//20, cv2.resize(letter_crop, (28, 56), interpolation = cv2.INTER_AREA)))
@@ -86,7 +88,7 @@ x1 = 0
 
 for i in  range(len(letters)):
     for letter in range(len(letters[i])):
-        if abs(letters[i][letter][0] - x1) > 150 and x1 != 0 :
+        if abs(letters[i][letter][0] - x1) > w0 * 2 and x1 != 0 :
             data += ' '
 
         if i == 0:
