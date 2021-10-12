@@ -2,10 +2,28 @@ import cv2,time
 import numpy as np
 import pytesseract
 
-img = cv2.imread('half5.png')
+img = cv2.imread('half6.png')
+img = cv2.resize(img,(img.shape[0] * 2, img.shape[1] * 2))
+
+img=cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+se=cv2.getStructuringElement(cv2.MORPH_CROSS, (20,20))
+bg=cv2.morphologyEx(img, cv2.MORPH_DILATE, se)
+out_gray=cv2.divide(img, bg, scale=200)
+out_binary=cv2.threshold(out_gray, 125, 255, cv2.THRESH_BINARY)[1]
+
+for x in range(len(out_gray)):
+    for y in range(len(out_gray[x])):
+        out_gray[x][y] = out_gray[x][y] %( 255 * out_binary[x][y])
+#out_binary=cv2.divide(out_gray, bg, scale=255)
+
+img = cv2.medianBlur(out_gray, 1 )
+
+#cv2.imshow(f'img', out_gray)
+#cv2.waitKey(0)
+
 img2 = img
 
-height, width, channels = img.shape
+height, width = img.shape
 # Number of pieces Horizontally
 CROP_W_SIZE  = 1
 # Number of pieces Vertically to each Horizontal
@@ -25,7 +43,7 @@ for ih in range(CROP_H_SIZE ):
 
 
         NAME = str(time.time())
-        #cv2.imwrite(str(time.time()) +  ".png",img_array[ih])
+        cv2.imwrite(str(time.time()) +  ".png",img_array[ih])
         img = img2
 
 i=0
@@ -34,8 +52,10 @@ letters = []
 img = img_array[0]
 
 i += 1
-gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-ret, binary = cv2.threshold(gray, 110, 255, cv2.THRESH_BINARY)
+gray = img
+
+
+ret, binary = cv2.threshold(gray, 100, 255, cv2.THRESH_BINARY)
 binary = cv2.resize(binary, (binary.shape[1] * 2, binary.shape[0]))
 contours, hierarchy = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -55,7 +75,7 @@ for idx, contour in enumerate(contours):
     if idx == len(contours) - 1:
         letters.append(letter)
 
-    if w > 20 and h > 34:
+    if w > 30 and h > 50:
         if hierarchy[0][idx][3] == 0:
             if abs(y - y1) > 20:
                 y1 = y
@@ -69,7 +89,7 @@ for idx, contour in enumerate(contours):
             w0 = w
             #letter_square = 255 * np.ones(shape=[size_max, size_max], dtype=np.uint8)
             if j == 1:
-                letter.append((x, y//20, cv2.resize(letter_crop, (28, 56), interpolation = cv2.INTER_AREA)))
+                letter.append((x, y//20, cv2.resize(letter_crop, (28, 50), interpolation = cv2.INTER_AREA)))
             else:
                 letter.append((x, y // 20, cv2.resize(letter_crop, (56, 60), interpolation=cv2.INTER_AREA)))
 cv2.imwrite(str(i) + ".png", binary)
@@ -92,7 +112,13 @@ for i in  range(len(letters)):
             data += ' '
 
         if i == 0:
-            data += pytesseract.image_to_string(letters[i][letter][2], config = config1, lang = 'rus')[0].upper()
+            let = pytesseract.image_to_string(letters[i][letter][2], config = config1, lang = 'rus')[0].upper()
+            '''h = 45
+            while let == '\f':
+                h += 1
+                cv2.resize(letter_crop, (28, h), interpolation=cv2.INTER_AREA)
+                let = pytesseract.image_to_string(letters[i][letter][2], config=config1, lang='rus')[0].upper()'''
+            data += let
         else:
             data += pytesseract.image_to_string(letters[i][letter][2], config=config2, lang='rus')[0].upper()
 
