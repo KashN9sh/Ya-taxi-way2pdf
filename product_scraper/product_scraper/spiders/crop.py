@@ -82,13 +82,19 @@ config1 = r'--psm 10 --oem 3 -c tessedit_char_whitelist=0123456789'
 config2 = r'--oem 3 --psm 6 -c tessedit_char_whitelist=ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЁЯЧСМИТЬБЮйцукенгшщзхъфывапролджэёячсмитьбю'
 
 data = ''
+x1 = 0
 
 for i in  range(len(letters)):
     for letter in range(len(letters[i])):
+        if abs(letters[i][letter][0] - x1) > 150 and x1 != 0 :
+            data += ' '
+
         if i == 0:
-            data += pytesseract.image_to_string(letters[i][letter][2], config = config1, lang = 'rus')[0]
+            data += pytesseract.image_to_string(letters[i][letter][2], config = config1, lang = 'rus')[0].upper()
         else:
-            data += pytesseract.image_to_string(letters[i][letter][2], config=config2, lang='rus')[0]
+            data += pytesseract.image_to_string(letters[i][letter][2], config=config2, lang='rus')[0].upper()
+
+        x1 = letters[i][letter][0]
         #print(data[0])
         #cv2.imshow(f'img{j}', letters[i][letter][2])
         #cv2.waitKey(0)
