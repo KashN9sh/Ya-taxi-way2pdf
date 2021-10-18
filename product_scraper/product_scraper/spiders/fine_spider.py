@@ -11,10 +11,11 @@ from PyQt5 import QtWidgets, QtCore
 import fines
 import sys
 import xlsxwriter
+import os
 
 
 dateFormatter = "%d.%m.%Y %H:%M"
-hours = 1
+hours = 3
 hours_added = datetime.timedelta(hours = hours)
 
 class Fine:
@@ -34,7 +35,7 @@ class Shtrul:
     region: str
     sts: str
     driver_id: str
-    car_id: str
+    car_id: list
 
     def __init__(self, car_number, region, sts, driver_id, car_id):
         self.car_number = car_number
@@ -57,18 +58,21 @@ def get_shtruls_from_api():
                                "driver_profile": {"work_rule_id": ["de98224d038a4f98a10b0fd8bf967efe", ],
                                                   # "badd1c9d6b6b4e9fb9e0b48367850467"],
                                                   "work_status": ["working", "not_working"]}}}}
-    response = requests.post(url_auth, headers=headers, json=data)
+    response1 = requests.post(url_auth, headers=headers, json=data)
 
-    for i in range(len(response.json()['driver_profiles'])):
-        if 'car' in response.json()['driver_profiles'][i]:
-            car_number = response.json()['driver_profiles'][i]['car']['number'][0:6]
-            car_id = response.json()['driver_profiles'][i]['car']['id']
-            region = response.json()['driver_profiles'][i]['car']['number'][6:]
-            if 'registration_cert' in response.json()['driver_profiles'][i]['car']:
-                sts = response.json()['driver_profiles'][i]['car']['registration_cert']
+    for i in range(len(response1.json()['driver_profiles'])):
+        car_id = []
+        if 'car' in response1.json()['driver_profiles'][i]:
+            car_number = response1.json()['driver_profiles'][i]['car']['number'][0:6]
+            car_id.append(response1.json()['driver_profiles'][i]['car']['id'])
+            region = response1.json()['driver_profiles'][i]['car']['number'][6:]
+            if 'registration_cert' in response1.json()['driver_profiles'][i]['car']:
+                sts = response1.json()['driver_profiles'][i]['car']['registration_cert']
             else:
                 sts = ''
-            driver_id = response.json()['driver_profiles'][i]['driver_profile']['id']
+            driver_id = response1.json()['driver_profiles'][i]['driver_profile']['id']
+
+        URL_AUTH = 'https://fleet-api.taxi.yandex.net/v1/parks/cars/list'
 
         flag = True
 
@@ -76,8 +80,30 @@ def get_shtruls_from_api():
             if shtrul.car_number == car_number:
                 flag = False
 
-        if flag :
+        if flag:
+            data = {"offset": 0,
+                    "limit": 1000,
+                    "query": {
+                        "park": {
+                            "id": "e96b6ddf4309416ba66bc8f801bc847f",
+                        }
+                    }
+                    }
+
+            response = requests.post(URL_AUTH, headers=headers, json=data)
+            total = int(response.json()['total'])
+
+            for k in range(total // 1000):
+                response = requests.post(URL_AUTH, headers=headers, json=data)
+                for j in range(len(response.json()['cars'])):
+                    if response.json()['cars'][j]['number'] == car_number + region and response.json()['cars'][j]['id'] != car_id[0]:
+                        car_id.append(response.json()['cars'][j]['id'])
+
+                data['offset'] += 1000
+
             shtrul_array.append(Shtrul(car_number, region, sts, driver_id, car_id))
+
+            print(car_number)
 
     return shtrul_array
 
@@ -138,35 +164,36 @@ def check_orders(fines_array, shtrul):
 
     if len(fines_array) != 0:
         for i in range(len(fines_array)):
-            data = {
-                "limit": 100,
-                "query": {
-                    "park": {
-                        "id": "e96b6ddf4309416ba66bc8f801bc847f",
-                        "car": {"id": shtrul.car_id},
-                        #"driver_profile": {"id": shtrul.driver_id},
-                        "order": {
-                            "booked_at": {
-                                "from": (datetime.datetime.strptime(fines_array[i].date + ' ' + fines_array[i].time,
-                                                          dateFormatter).astimezone().replace(microsecond=0) - hours_added).isoformat(),
+            for j in range(len(shtrul.car_id)):
+                data = {
+                    "limit": 100,
+                    "query": {
+                        "park": {
+                            "id": "e96b6ddf4309416ba66bc8f801bc847f",
+                            "car": {"id": shtrul.car_id[j]}, #beba76aa0b7e49733bf6c92c2d89ff58
+                            #"driver_profile": {"id": shtrul.driver_id},
+                            "order": {
+                                "booked_at": {
+                                    "from": (datetime.datetime.strptime(fines_array[i].date + ' ' + fines_array[i].time,
+                                                              dateFormatter).astimezone().replace(microsecond=0) - hours_added).isoformat(),
 
-                                 "to": (datetime.datetime.strptime(fines_array[i].date + ' ' + fines_array[i].time,
-                                                          dateFormatter).astimezone().replace(microsecond=0) + hours_added).isoformat()
+                                     "to": (datetime.datetime.strptime(fines_array[i].date + ' ' + fines_array[i].time,
+                                                              dateFormatter).astimezone().replace(microsecond=0) + hours_added).isoformat()
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            response = requests.post(URL_AUTH, headers=headers, json=data)
+                response = requests.post(URL_AUTH, headers=headers, json=data)
 
-            if len(response.json()['orders']) != 0:
-                fines.append(fines_array[i])
-                shtruls.append(response.json()['orders'][0]['driver_profile'])
-                #print(fines_array[i].decree)
-            #print(response.status_code)
-            #print(response.json())
-            time.sleep(0.5)
+                if len(response.json()['orders']) != 0:
+                    fines.append(fines_array[i])
+                    shtruls.append(response.json()['orders'][0]['driver_profile'])
+                    #print(fines_array[i].decree)
+                #print(response.status_code)
+                #print(response.json())
+                time.sleep(0.5)
     final_fines_array.append(fines)
     final_fines_array.append(shtruls)
     return final_fines_array
@@ -381,20 +408,24 @@ class App(QtWidgets.QMainWindow, fines.Ui_MainWindow):
 
             data_for_excel = pd.DataFrame(data=decrees, columns=carriers)
 
-            workbook = xlsxwriter.Workbook(f'{car_number}.xlsx')
-            a = str(random.randint(0,1000))
-            worksheet = workbook.add_worksheet(datetime.datetime.now().date().strftime("%d.%m.%Y ")+ a)
+            if not os.path.exists(str(car_number)):
+                os.mkdir(str(car_number))
 
-            writer = pd.ExcelWriter(f'{car_number}.xlsx')
+            name = str(car_number) + '/' + datetime.datetime.now().strftime("%d%m%Y%H%M%S") + '.xlsx'
+
+            workbook = xlsxwriter.Workbook(name)
+            worksheet = workbook.add_worksheet(datetime.datetime.now().date().strftime("%d.%m.%Y "))
+
+            writer = pd.ExcelWriter(name)
 
             data_for_excel.to_excel(writer, index=False,
-                                    sheet_name=datetime.datetime.now().date().strftime("%d.%m.%Y ")+ a)
+                                    sheet_name=datetime.datetime.now().date().strftime("%d.%m.%Y "))
 
             # Auto-adjust columns' width
             for column in data_for_excel:
                 column_width = max(data_for_excel[column].astype(str).map(len).max(), len(column))
                 col_idx = data_for_excel.columns.get_loc(column)
-                writer.sheets[datetime.datetime.now().date().strftime("%d.%m.%Y ") + a].set_column(col_idx, col_idx,
+                writer.sheets[datetime.datetime.now().date().strftime("%d.%m.%Y ")].set_column(col_idx, col_idx,
                                                                                               column_width)
 
             writer.save()
