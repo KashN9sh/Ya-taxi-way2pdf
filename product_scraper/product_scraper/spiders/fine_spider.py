@@ -7,15 +7,14 @@ from uuid import uuid4
 import datetime
 import pandas as pd
 import itertools
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets,QtCore, QtGui
 import fines
 import sys
 import xlsxwriter
 import os
 
-
 dateFormatter = "%d.%m.%Y %H:%M"
-hours = 3
+hours = 8
 hours_added = datetime.timedelta(hours = hours)
 
 class Fine:
@@ -23,17 +22,19 @@ class Fine:
     time: str
     decree: str
     cost: str
+    color: str
 
-    def __init__(self, date, time, decree, cost):
+    def __init__(self, date, time, decree, cost, color):
         self.date = date
         self.time = time
         self.decree = decree
         self.cost = cost
+        self.color = color
 
 class Shtrul:
     car_number: str
     region: str
-    sts: str
+    sts: list
     driver_id: str
     car_id: list
 
@@ -57,30 +58,58 @@ def get_shtruls_from_api():
     data = {"query": {"park": {"id": "e96b6ddf4309416ba66bc8f801bc847f",
                                "driver_profile": {"work_rule_id": ["de98224d038a4f98a10b0fd8bf967efe", ],
                                                   # "badd1c9d6b6b4e9fb9e0b48367850467"],
-                                                  "work_status": ["working", "not_working"]}}}}
+                                                  #"work_status": ["working", "not_working"]
+                                                  }}}}
     response1 = requests.post(url_auth, headers=headers, json=data)
 
     for i in range(len(response1.json()['driver_profiles'])):
         car_id = []
+        sts = []
         if 'car' in response1.json()['driver_profiles'][i]:
             car_number = response1.json()['driver_profiles'][i]['car']['number'][0:6]
             car_id.append(response1.json()['driver_profiles'][i]['car']['id'])
             region = response1.json()['driver_profiles'][i]['car']['number'][6:]
             if 'registration_cert' in response1.json()['driver_profiles'][i]['car']:
-                sts = response1.json()['driver_profiles'][i]['car']['registration_cert']
+                sts.append(str(response1.json()['driver_profiles'][i]['car']['registration_cert']))
             else:
-                sts = ''
+                sts = []
             driver_id = response1.json()['driver_profiles'][i]['driver_profile']['id']
 
         URL_AUTH = 'https://fleet-api.taxi.yandex.net/v1/parks/cars/list'
 
-        flag = True
+        flag2 = True
+
+        flag1 = True
+        flag3 = True
 
         for shtrul in shtrul_array:
-            if shtrul.car_number == car_number:
-                flag = False
+            if shtrul.car_number == car_number and region == shtrul.region:
+                flag2 = False
 
-        if flag:
+                flag3 = False
+                for Sts in shtrul.sts:
+                    if not flag3 and Sts == sts[0]:
+                        flag3 = True
+
+                flag1 = False
+                for Id in shtrul.car_id:
+                    if not flag1 and Id == car_id[0]:
+                        flag1 = True
+
+                if not flag1:
+                    shtrul.car_id.append(response1.json()['driver_profiles'][i]['car']['id'])
+
+                if not flag3:
+                    shtrul.sts.append(response1.json()['driver_profiles'][i]['car']['registration_cert'])
+
+
+
+        if flag2:
+            if len(shtrul_array) == 0 or (flag1 and flag3) and car_number != "COURIE":
+                shtrul_array.append(Shtrul(car_number, region, sts, driver_id, car_id))
+
+        #if flag:
+            '''
             data = {"offset": 0,
                     "limit": 1000,
                     "query": {
@@ -89,7 +118,7 @@ def get_shtruls_from_api():
                         }
                     }
                     }
-
+            
             response = requests.post(URL_AUTH, headers=headers, json=data)
             total = int(response.json()['total'])
 
@@ -99,55 +128,65 @@ def get_shtruls_from_api():
                     if response.json()['cars'][j]['number'] == car_number + region and response.json()['cars'][j]['id'] != car_id[0]:
                         car_id.append(response.json()['cars'][j]['id'])
 
-                data['offset'] += 1000
+                data['offset'] += 1000'''
 
-            shtrul_array.append(Shtrul(car_number, region, sts, driver_id, car_id))
-
-            print(car_number)
+            #shtrul_array.append(Shtrul(car_number, region, sts, driver_id, car_id))
+        print(car_number)
 
     return shtrul_array
 
 def parse_info(gos_reg, region, registration):
     fines_array = []
-    fines_url = f'https://гибдд.рф/check/fines' \
-                f'#{gos_reg}+{region}+{registration}'
 
-    driver = webdriver.Safari()
+    for i in range(len(registration)):
+        fines_url = f'https://гибдд.рф/check/fines#{gos_reg}+{region}+{registration[i]}'
 
-    def check_exists_by_xpath(xpath):
-        try:
-            driver.find_element_by_xpath(xpath)
-        except NoSuchElementException:
-            return False
-        return True
+        driver = webdriver.Safari()
 
-    driver.get(fines_url)
+        def check_exists_by_xpath(xpath):
+            try:
+                driver.find_element_by_xpath(xpath)
+            except NoSuchElementException:
+                return False
+            return True
 
-    button = driver.find_element_by_xpath("//a[@class='checker']")
-    time.sleep(1)
-    button.click()
+        driver.get(fines_url)
 
-    time.sleep(25)
-
-    if check_exists_by_xpath("//button[@class='close_modal_window']"):
-        button = driver.find_element_by_xpath("//button[@class='close_modal_window']")
+        button = driver.find_element_by_xpath("//a[@class='checker']")
+        time.sleep(1)
         button.click()
-        time.sleep(3)
 
-    fines_count = len(driver.find_elements_by_xpath("//div[@class='checkResult']/ul[@class='finesItem']"))
+        time.sleep(25)
 
-    for i in range(fines_count):
-        date_str = driver.find_elements_by_xpath("//div[@class='checkResult']/"
-                                                 "ul[@class='finesItem']/li/span[@class='field fine-datedecis']")[i].text
+        if check_exists_by_xpath("//button[@class='close_modal_window']"):
+            button = driver.find_element_by_xpath("//button[@class='close_modal_window']")
+            button.click()
+            time.sleep(3)
 
-        decree_str = driver.find_elements_by_xpath("//div[@class='checkResult']/"
-                                                   "ul[@class='finesItem']/li/span[@class='field fine-datepost']")[i].text
-        cost_str = driver.find_elements_by_xpath("//div[@class='checkResult']/"
-                                                 "ul[@class='finesItem']/li/span[@class='field fine-summa']")[i].text
+        fines_count = len(driver.find_elements_by_xpath("//div[@class='checkResult']/ul[@class='finesItem']"))
 
-        fines_array.append(Fine(date_str.split()[0], date_str.split()[2], decree_str.split()[0], cost_str.split()[0]))
+        for i in range(fines_count):
+            date_str = driver.find_elements_by_xpath("//div[@class='checkResult']/"
+                                                     "ul[@class='finesItem']/li/span[@class='field fine-datedecis']")[i].text
 
-    driver.close()
+            decree_str = driver.find_elements_by_xpath("//div[@class='checkResult']/"
+                                                       "ul[@class='finesItem']/li/span[@class='field fine-datepost']")[i].text
+            cost_str = driver.find_elements_by_xpath("//div[@class='checkResult']/"
+                                                     "ul[@class='finesItem']/li/span[@class='field fine-summa']")[i].text
+
+            color_str = "Black"
+
+            prosrochka = len(driver.find_elements_by_xpath("//span[@class='sentfssp']"))
+            sale = len(driver.find_elements_by_xpath("//span[@class='sum50prc']"))
+
+            if i < prosrochka:
+                color_str = "Red"
+            elif sale > fines_count - i:
+                color_str = "Green"
+
+            fines_array.append(Fine(date_str.split()[0], date_str.split()[2], decree_str.split()[0], cost_str.split()[0], color_str))
+
+        driver.close()
 
     return fines_array
 
@@ -187,13 +226,14 @@ def check_orders(fines_array, shtrul):
 
                 response = requests.post(URL_AUTH, headers=headers, json=data)
 
-                if len(response.json()['orders']) != 0:
-                    fines.append(fines_array[i])
-                    shtruls.append(response.json()['orders'][0]['driver_profile'])
-                    #print(fines_array[i].decree)
-                #print(response.status_code)
-                #print(response.json())
-                time.sleep(0.5)
+                if response.status_code == 200:
+                    if len(response.json()['orders']) != 0:
+                        fines.append(fines_array[i])
+                        shtruls.append(response.json()['orders'][0]['driver_profile'])
+                        #print(fines_array[i].decree)
+                    #print(response.status_code)
+                    #print(response.json())
+                    time.sleep(0.5)
     final_fines_array.append(fines)
     final_fines_array.append(shtruls)
     return final_fines_array
@@ -343,7 +383,7 @@ class App(QtWidgets.QMainWindow, fines.Ui_MainWindow):
         for shtrul in self.shtruls:
             self.listWidget.addItem(shtrul.car_number)
 
-    def print_fines_array(self,fines_array, bd, carriers, car_number):
+    def print_fines_array(self, fines_array, bd, carriers, car_number):
         f = open("decrees.txt", "a")
         decrees = []
         URL_AUTH = 'https://fleet-api.taxi.yandex.net/v2/parks/driver-profiles/transactions'
@@ -435,7 +475,7 @@ class App(QtWidgets.QMainWindow, fines.Ui_MainWindow):
         self.final_fines_array.clear()
 
         for i in range(self.listWidget_2.count()):
-         self.listWidget_2.takeItem(self.listWidget_2.row(self.listWidget_2.item(0)))
+            self.listWidget_2.takeItem(self.listWidget_2.row(self.listWidget_2.item(0)))
 
         self.car_number = self.shtruls[self.listWidget.currentRow()].car_number
 
@@ -449,7 +489,9 @@ class App(QtWidgets.QMainWindow, fines.Ui_MainWindow):
             item = QtWidgets.QListWidgetItem()
             item.setText(self.final_fines_array[0][1][i]['name'] + ' ' +
                                       self.final_fines_array[0][0][i].decree + ' ' +
+                                      self.final_fines_array[0][0][i].date + ' ' + self.final_fines_array[0][0][i].time + ' ' +
                                       self.final_fines_array[0][0][i].cost)
+            item.setForeground(QtGui.QColor(self.final_fines_array[0][0][i].color))
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
             item.setCheckState(QtCore.Qt.Unchecked)
             self.listWidget_2.addItem(item)
