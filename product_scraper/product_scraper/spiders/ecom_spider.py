@@ -68,9 +68,9 @@ def parse_info(gos_reg, qr):
 
         j = 0
 
-        count = len(driver.find_elements_by_xpath("//a[@class='js-popup-open']")) 
-        print(item.status)
-        while item.status == 'Признано недействующим':
+        count = len(driver.find_elements_by_xpath("//a[@class='js-popup-open']"))
+        
+        while True:
             button = driver.find_elements_by_xpath("//a[@class='js-popup-open']")[j]
             button.click()
 
@@ -123,8 +123,14 @@ def parse_info(gos_reg, qr):
             button.click()
 
             time.sleep(1)
-
+            
+            if driver.find_element_by_xpath(
+                    f"//table/tbody/tr[{j + 1}]/td[7]").text == 'Действующее':
+                break
+            
             j += 1
+
+            
 
         time.sleep(3)
 
@@ -161,7 +167,7 @@ def date_to_str(date):
 
 def make_pdf(carrier, date_from, date_to):
     date = date_from
-    canvas = Canvas(carrier.name.split()[0] + ".pdf", pagesize=A5)
+    canvas = Canvas(carrier.name + ".pdf", pagesize=A5)
 
     pdfmetrics.registerFont(TTFont('FreeSans', 'FreeSans.ttf'))
     pdfmetrics.registerFont(TTFont('FreeSansBold', 'FreeSansBold.ttf'))
@@ -235,10 +241,11 @@ def make_pdf(carrier, date_from, date_to):
         canvas.drawString(10 * mm, 142 * mm, 'Водитель:')
         try:
             carrier.name = carrier.name.replace('.', ' ')
-            canvas.drawString(24 * mm, 142 * mm, carrier.name.split()[0] + '.' + carrier.name.split()[1][0] + '.' +
-                              carrier.name.split()[2][0])
+            print(carrier.name)
+            canvas.drawString(24 * mm, 142 * mm, carrier.name.split()[0] + ' ' + carrier.name.split()[1][0] + '.'
+                               + carrier.name.split()[2][0] + '.')
         except:
-            canvas.drawString(24 * mm, 142 * mm, carrier.name.split()[0] + '.' + carrier.name.split()[1][0])
+            canvas.drawString(24 * mm, 142 * mm, carrier.name.split()[0] + ' ' + carrier.name.split()[1][0] + '.')
 
         canvas.drawString(10 * mm, 148 * mm, 'Лицензионная карточка: стандартная')
 
@@ -526,7 +533,8 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
             f.close()
 
             make_pdf(self.bd[len(self.bd) - 1], self.dateEditFrom.date().toPyDate(), self.dateEditTo.date().toPyDate())
-
+            if not self.checkBoxPlusPrint.isChecked():
+                self.make_excel(self.bd[len(self.bd) - 1])
         elif not self.loadFromBD and self.check_gosnum():
             self.bd[self.carrierFromBDNum].name = self.name.text()
             self.bd[self.carrierFromBDNum].address = self.addres.text()
@@ -546,6 +554,8 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
 
             make_pdf(self.bd[self.carrierFromBDNum], self.dateEditFrom.date().toPyDate(),
                      self.dateEditTo.date().toPyDate())
+            if not self.checkBoxPlusPrint.isChecked():
+                self.make_excel(self.bd[self.carrierFromBDNum])
 
         else:
             self.bd[self.carrierFromBDNum].name = self.name.text()
@@ -568,8 +578,8 @@ class App(QtWidgets.QMainWindow, MainWindow.Ui_Dialog):
                      self.dateEditTo.date().toPyDate())
             self.loadFromBD = False
 
-        if not self.checkBoxPlusPrint.isChecked():
-            self.make_excel(self.bd[len(self.bd) - 1])
+            if not self.checkBoxPlusPrint.isChecked():
+                self.make_excel(self.bd[self.carrierFromBDNum])
         self.auto_fill()
 
 
