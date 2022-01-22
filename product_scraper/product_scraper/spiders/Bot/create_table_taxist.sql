@@ -47,16 +47,12 @@ CREATE TABLE telegrams (
 
 CREATE TABLE zp_alfa (
     id_driver INT NOT NULL,
-    id_alfa VARCHAR(10) NOT NULL,
     account_number VARCHAR(20) NOT NULL,
-    status_card VARCHAR(32) NOT NULL,
-    active_to VARCHAR(5) NOT NULL,
     PRIMARY KEY (id_driver),
     FOREIGN KEY (id_driver)
         REFERENCES drivers(id_driver)
         ON UPDATE CASCADE
         ON DELETE CASCADE,
-    UNIQUE KEY (id_alfa),
     UNIQUE KEY (account_number)
     ) ENGINE = InnoDB;
 

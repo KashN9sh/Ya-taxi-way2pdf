@@ -86,5 +86,5 @@ def autho_lk_zp(login, password):
 if __name__ == "__main__":
     logger.info("start import")
     import_taximeter(Config.token_taximeter)
-    import_zp_ab()
+    #import_zp_ab()
     logger.info("end import")

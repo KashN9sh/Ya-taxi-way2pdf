@@ -25,22 +25,17 @@ class DataBase:
 
     def update_zp_alfa(self, list):
         sql_sel_id_driver = """
-            SELECT `id_driver` FROM `drivers` 
-                WHERE `first_name` = %(first_name)s
-                AND `last_name` = %(last_name)s
-                AND SUBSTRING_INDEX(surname, ' ', 1) = %(surname)s;
+            SELECT `id_driver` FROM `phones` 
+                WHERE `phone` = %(phone)s
         """
         sql_ins_zp_alfa= """
-            INSERT INTO `zp_alfa` (`id_driver`, `id_alfa`, `account_number`, `status_card`, `active_to`)
-            VALUES (%(id_driver)s, %(id_alfa)s, %(account_number)s, %(status_card)s, %(active_to)s);
+            INSERT INTO `zp_alfa` (`id_driver`, `account_number`)
+            VALUES (%(id_driver)s, %(account_number)s);
         """
         sql_upd_zp_alfa = """
             UPDATE `zp_alfa` 
             SET 
-                `id_alfa` = %(id_alfa)s,
                 `account_number` = %(account_number)s,
-                `status_card` = %(status_card)s,
-                `active_to` = %(active_to)s
             WHERE
                 `id_driver` = %(id_driver)s;
         """
@@ -49,33 +44,29 @@ class DataBase:
         except Error:
             logger.exception("[WTF?]")
         else:
-            for row in list:
-                # print(row)
+            for i in range(list.shape[0]):
+                row = list.iloc[i]
+                print(row)
                 try:
                     cur = conn.cursor(buffered=True)
-                    cur.execute(sql_sel_id_driver, {"first_name": row[1],
-                                                    "last_name": row[0],
-                                                    "surname": row[2].split(' ')[0]})
+                    print('+' + str(row['Phone']))
+                    cur.execute(sql_sel_id_driver, {"phone": '+' + str(row['Phone'])})
                                                     # "birth_date": row[3],
                                                     # "passport": row[4]})
+                    print('+' + str(row['Phone']).split('.')[0])
                     resp = cur.fetchone()
                     if resp is None:
                         pass
                     else:
                         id_driver = resp[0]
+                        print(id_driver)
                         try:
                             cur.execute(sql_ins_zp_alfa, {"id_driver": id_driver,
-                                                          "id_alfa": row[5],
-                                                          "account_number": row[6],
-                                                          "status_card": row[7],
-                                                          "active_to": row[8]})
+                                                          "account_number": row[1]})
                         except IntegrityError:
                             # print("update")
                             cur.execute(sql_upd_zp_alfa, {"id_driver": id_driver,
-                                                          "id_alfa": row[5],
-                                                          "account_number": row[6],
-                                                          "status_card": row[7],
-                                                          "active_to": row[8]})
+                                                          "account_number": row['Number']})
                         except Error:
                             logger.exception("[WTF?]")
                         finally:

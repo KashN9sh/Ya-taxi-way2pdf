@@ -2,6 +2,8 @@ import datetime
 import logging
 import csv
 
+import pandas as pd
+
 from MenuBot import MenuBot
 from telebot import types
 
@@ -14,6 +16,7 @@ import Excel
 from Config import token_taximeter
 from Config import logger
 import os
+import shutil
 
 db = Database.DataBase()
 bot = MenuBot(Config.token_drivers_bot)
@@ -369,16 +372,17 @@ def handle_callback_money_amount(callback):
 def set_alfabank_file(message):
     if message.document is None:
         return "Вы не прикрепили файл"
-    elif message.document.file_name.endswith(".txt"):
-        file_ = bot.download_file(bot.get_file(message.document.file_id).file_path)
-        fl = file_.decode('utf-8').replace("\t\t", ";").replace("Закрыт\r\n", " Закрыт;").replace("\r\n4", "4") \
-            .replace("\n\t", "\n").replace("\t", ";").replace("\n\n", "\n").strip()
+    elif message.document.file_name.endswith(".csv"):
         try:
-            file = open(Config.alfabank_file, "w")
-            if fl[1] == ";":
-                file.write(fl[2:])
-            else:
-                file.write(fl)
+            file_name = message.document.file_name
+            file_id = message.document.file_name
+            file_id_info = bot.get_file(message.document.file_id)
+            downloaded_file = bot.download_file(file_id_info.file_path)
+            src = file_name
+            with open(Config.alfabank_file, 'wb') as new_file:
+                new_file.write(downloaded_file)
+                alpha = pd.read_csv(Config.alfabank_file)
+                db.update_zp_alfa(alpha)
             return "Данные обновяться в 1:00"
         except OSError:
             return "Не удалось сохранить файл"
